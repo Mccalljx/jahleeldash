@@ -595,6 +595,169 @@ body::after {
   .gm-progress-num { font-size: 36px; }
 }
 
+/* ===== Daily Routine ===== */
+.routine-card {
+  margin-top: 8px;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 14px;
+  overflow: hidden;
+}
+.routine-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 16px 20px 12px;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+.routine-progress-wrap { display: flex; align-items: center; gap: 10px; }
+.routine-progress-bar-bg {
+  width: 80px; height: 4px; border-radius: 2px;
+  background: rgba(255,255,255,0.07); overflow: hidden;
+  flex-shrink: 0;
+}
+.routine-progress-bar {
+  height: 100%; border-radius: 2px;
+  background: linear-gradient(90deg, #6ee7b7, #34d399);
+  transition: width 0.4s cubic-bezier(0.4,0,0.2,1);
+}
+.routine-progress-label {
+  font-size: 11px; font-weight: 600;
+  color: var(--text-tertiary);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.routine-header-actions { display: flex; gap: 6px; align-items: center; }
+.routine-reset-btn {
+  font-size: 11px; font-weight: 600; letter-spacing: 0.04em;
+  text-transform: uppercase; cursor: pointer;
+  padding: 5px 10px; border-radius: 7px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.08);
+  color: var(--text-tertiary); font-family: inherit;
+  -webkit-tap-highlight-color: transparent;
+  transition: background 0.15s, color 0.15s;
+}
+.routine-reset-btn:hover { background: rgba(255,255,255,0.08); color: var(--text-secondary); }
+/* item list */
+.routine-list { padding: 6px 0; min-height: 0; }
+.routine-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 20px;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+  transition: background 0.15s;
+  cursor: grab;
+}
+.routine-item:last-child { border-bottom: none; }
+.routine-item:hover { background: rgba(255,255,255,0.02); }
+.routine-item.dragging {
+  opacity: 0.4; cursor: grabbing;
+}
+.routine-item.drag-over { background: rgba(110,231,183,0.04); }
+/* check toggle */
+.routine-check {
+  flex-shrink: 0; width: 20px; height: 20px;
+  border-radius: 6px; border: 1.5px solid rgba(255,255,255,0.18);
+  background: transparent; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  -webkit-tap-highlight-color: transparent;
+  transition: background 0.2s, border-color 0.2s, transform 0.15s;
+  position: relative; overflow: hidden;
+}
+.routine-check:hover { border-color: rgba(110,231,183,0.5); }
+.routine-check.done {
+  background: #6ee7b7; border-color: #6ee7b7;
+}
+.routine-check.done::after {
+  content: '';
+  display: block; width: 5px; height: 9px;
+  border-right: 2px solid #0a0a0b;
+  border-bottom: 2px solid #0a0a0b;
+  transform: rotate(45deg) translate(-1px,-1px);
+}
+.routine-check.pop { animation: routine-pop 0.22s cubic-bezier(0.34,1.56,0.64,1); }
+@keyframes routine-pop { 0%,100%{transform:scale(1)} 50%{transform:scale(1.3)} }
+/* text */
+.routine-text {
+  flex: 1; min-width: 0; font-size: 14px;
+  color: var(--text-secondary); line-height: 1.4;
+  transition: color 0.25s, opacity 0.25s;
+  word-break: break-word;
+}
+.routine-text.done {
+  text-decoration: line-through;
+  color: var(--text-tertiary); opacity: 0.55;
+}
+.routine-text-input {
+  flex: 1; min-width: 0; font-size: 14px;
+  background: rgba(0,0,0,0.28); color: var(--text-primary);
+  border: 1px solid rgba(110,231,183,0.35);
+  border-radius: 7px; padding: 4px 9px;
+  font-family: inherit; outline: none;
+  box-shadow: 0 0 0 3px rgba(110,231,183,0.07);
+}
+/* item action buttons */
+.routine-item-actions { display: flex; gap: 4px; flex-shrink: 0; opacity: 0; transition: opacity 0.15s; }
+.routine-item:hover .routine-item-actions { opacity: 1; }
+.routine-item-actions:focus-within { opacity: 1; }
+.routine-item-btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 26px; height: 26px; border-radius: 7px;
+  background: transparent; border: 1px solid transparent;
+  font-size: 12px; cursor: pointer; color: rgba(255,255,255,0.28);
+  -webkit-tap-highlight-color: transparent;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+.routine-item-btn.edit:hover  { background: rgba(255,255,255,0.06); color: rgba(255,255,255,0.7); border-color: rgba(255,255,255,0.1); }
+.routine-item-btn.del:hover   { background: rgba(255,107,107,0.1); color: #ff8a8a; border-color: rgba(255,107,107,0.18); }
+.routine-item-btn.save:hover  { background: rgba(110,231,183,0.1); color: #6ee7b7; border-color: rgba(110,231,183,0.18); }
+/* drag handle */
+.routine-drag { flex-shrink: 0; color: rgba(255,255,255,0.14); font-size: 13px; cursor: grab; padding: 0 2px; user-select: none; line-height: 1; }
+/* add row */
+.routine-add-row {
+  display: flex; gap: 8px; padding: 12px 20px 14px;
+  border-top: 1px solid rgba(255,255,255,0.05);
+}
+.routine-input {
+  flex: 1; min-width: 0;
+  background: rgba(0,0,0,0.28); color: var(--text-primary);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 10px; padding: 9px 13px;
+  font-size: 13px; font-family: inherit; outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.routine-input:focus { border-color: rgba(110,231,183,0.35); box-shadow: 0 0 0 3px rgba(110,231,183,0.08); }
+.routine-input::placeholder { color: rgba(255,255,255,0.22); }
+.routine-add-btn {
+  flex-shrink: 0; padding: 9px 15px;
+  background: rgba(110,231,183,0.10);
+  border: 1px solid rgba(110,231,183,0.2);
+  border-radius: 10px; color: #6ee7b7;
+  font-size: 12px; font-weight: 700; letter-spacing: 0.06em;
+  text-transform: uppercase; cursor: pointer; font-family: inherit;
+  -webkit-tap-highlight-color: transparent;
+  transition: background 0.15s, transform 0.1s;
+  white-space: nowrap;
+}
+.routine-add-btn:hover  { background: rgba(110,231,183,0.18); }
+.routine-add-btn:active { transform: scale(0.96); }
+/* enter animation */
+@keyframes routine-enter {
+  from { opacity:0; transform: translateY(-6px) scaleY(0.95); }
+  to   { opacity:1; transform: translateY(0)    scaleY(1); }
+}
+.routine-item.entering { animation: routine-enter 0.22s cubic-bezier(0.22,1,0.36,1) forwards; }
+/* empty state */
+.routine-empty {
+  padding: 20px; text-align: center;
+  font-size: 13px; color: var(--text-tertiary);
+}
+@media (max-width: 480px) {
+  .routine-header { padding: 14px 16px 10px; }
+  .routine-item   { padding: 10px 16px; }
+  .routine-add-row { padding: 10px 16px 12px; }
+  .routine-item-actions { opacity: 1; }
+  .routine-progress-bar-bg { width: 60px; }
+}
+
 /* ===== Quote Shuffle ===== */
 .quote-wrap {
   position: relative;
@@ -871,6 +1034,29 @@ body::after {
         <button type="button" id="tomorrowAddBtn"    class="gm-add">+ Add</button>
         <button type="button" id="tomorrowPolishBtn" class="gm-polish">✨ Polish</button>
         <div class="gm-status" id="tomorrowStatus"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section" id="routineSection">
+    <div class="section-title">Daily Routine</div>
+    <div class="routine-card">
+      <div class="routine-header">
+        <div class="routine-progress-wrap">
+          <div class="routine-progress-bar-bg">
+            <div class="routine-progress-bar" id="routineBar" style="width:0%"></div>
+          </div>
+          <span class="routine-progress-label" id="routineProgressLabel">0 / 0</span>
+        </div>
+        <div class="routine-header-actions">
+          <button class="routine-reset-btn" id="routineResetBtn">Reset Day</button>
+        </div>
+      </div>
+      <div class="routine-list" id="routineList"></div>
+      <div class="routine-add-row">
+        <input class="routine-input" id="routineInput" type="text" maxlength="120"
+               placeholder="Add a routine task…" autocomplete="off" />
+        <button class="routine-add-btn" id="routineAddBtn">Add</button>
       </div>
     </div>
   </div>
@@ -1704,6 +1890,225 @@ document.addEventListener('DOMContentLoaded', function () {
   wrap.addEventListener('mouseleave', () => { if (!managerOpen) paused = false; });
   wrap.addEventListener('touchstart', () => { paused = true; }, { passive: true });
   wrap.addEventListener('touchend',   () => { if (!managerOpen) setTimeout(() => { paused = false; }, 2500); }, { passive: true });
+})();
+</script>
+<script>
+// ===== Daily Routine =====
+(function () {
+  'use strict';
+  const LS_KEY = 'dashboard_routine';
+
+  const DEFAULT_ITEMS = [
+    { text: 'Workout',               done: false },
+    { text: 'Study cybersecurity',   done: false },
+    { text: 'Read 10 pages',         done: false },
+    { text: 'Drink enough water',    done: false },
+    { text: 'Review goals for today',done: false }
+  ];
+
+  // ---- State ----
+  function load() {
+    try {
+      const raw = localStorage.getItem(LS_KEY);
+      if (raw) {
+        const arr = JSON.parse(raw);
+        if (Array.isArray(arr) && arr.length) return arr;
+      }
+    } catch (e) {}
+    return DEFAULT_ITEMS.map((x, i) => ({ id: 'r' + i, text: x.text, done: x.done }));
+  }
+  function save() { try { localStorage.setItem(LS_KEY, JSON.stringify(items)); } catch (e) {} }
+  function genId() { return 'r' + Date.now() + '_' + Math.random().toString(36).slice(2, 7); }
+
+  let items = load();
+
+  // ---- DOM ----
+  const listEl   = document.getElementById('routineList');
+  const input    = document.getElementById('routineInput');
+  const addBtn   = document.getElementById('routineAddBtn');
+  const resetBtn = document.getElementById('routineResetBtn');
+  const bar      = document.getElementById('routineBar');
+  const label    = document.getElementById('routineProgressLabel');
+  if (!listEl) return;
+
+  // ---- Render ----
+  function renderProgress() {
+    const total = items.length;
+    const done  = items.filter(x => x.done).length;
+    const pct   = total ? Math.round((done / total) * 100) : 0;
+    bar.style.width = pct + '%';
+    label.textContent = done + ' / ' + total;
+    bar.style.background = pct === 100
+      ? 'linear-gradient(90deg,#34d399,#6ee7b7)'
+      : 'linear-gradient(90deg,#6ee7b7,#34d399)';
+  }
+
+  function escHtml(s) {
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  function renderItem(item, entering) {
+    const div = document.createElement('div');
+    div.className = 'routine-item' + (entering ? ' entering' : '');
+    div.draggable = true;
+    div.dataset.id = item.id;
+
+    div.innerHTML =
+      '<span class="routine-drag" title="Drag to reorder">⠿</span>' +
+      '<button class="routine-check' + (item.done ? ' done' : '') + '" data-id="' + item.id + '" aria-label="Toggle"></button>' +
+      '<span class="routine-text' + (item.done ? ' done' : '') + '" id="rt_' + item.id + '">' + escHtml(item.text) + '</span>' +
+      '<div class="routine-item-actions">' +
+        '<button class="routine-item-btn edit" data-id="' + item.id + '" title="Edit">✎</button>' +
+        '<button class="routine-item-btn del"  data-id="' + item.id + '" title="Delete">✕</button>' +
+      '</div>';
+
+    div.querySelector('.routine-check').addEventListener('click', () => toggleDone(item.id, div));
+    div.querySelector('.edit').addEventListener('click', () => startEdit(item.id, div));
+    div.querySelector('.del').addEventListener('click',  () => deleteItem(item.id, div));
+
+    div.addEventListener('dragstart', onDragStart);
+    div.addEventListener('dragover',  onDragOver);
+    div.addEventListener('dragleave', onDragLeave);
+    div.addEventListener('drop',      onDrop);
+    div.addEventListener('dragend',   onDragEnd);
+    return div;
+  }
+
+  function render() {
+    if (!items.length) {
+      listEl.innerHTML = '<div class="routine-empty">No tasks yet — add one below</div>';
+      renderProgress(); return;
+    }
+    listEl.innerHTML = '';
+    items.forEach(item => listEl.appendChild(renderItem(item, false)));
+    renderProgress();
+  }
+
+  // ---- Actions ----
+  function toggleDone(id, div) {
+    const item = items.find(x => x.id === id);
+    if (!item) return;
+    item.done = !item.done;
+    save();
+    const check = div.querySelector('.routine-check');
+    const text  = div.querySelector('.routine-text');
+    check.classList.toggle('done', item.done);
+    check.classList.add('pop');
+    check.addEventListener('animationend', () => check.classList.remove('pop'), { once: true });
+    text.classList.toggle('done', item.done);
+    renderProgress();
+  }
+
+  function deleteItem(id, div) {
+    div.style.transition = 'opacity 0.18s, transform 0.18s';
+    div.style.opacity = '0'; div.style.transform = 'translateX(12px)';
+    setTimeout(() => {
+      items = items.filter(x => x.id !== id);
+      save(); render();
+    }, 180);
+  }
+
+  function addItem() {
+    const text = input.value.trim();
+    if (!text) { input.focus(); input.classList.add('shake'); setTimeout(() => input.classList.remove('shake'), 400); return; }
+    if (items.some(x => x.text.toLowerCase() === text.toLowerCase())) {
+      input.select(); return;
+    }
+    const item = { id: genId(), text, done: false };
+    items.push(item);
+    save();
+    input.value = '';
+    const div = renderItem(item, true);
+    if (listEl.querySelector('.routine-empty')) listEl.innerHTML = '';
+    listEl.appendChild(div);
+    renderProgress();
+    input.focus();
+  }
+
+  function startEdit(id, div) {
+    const textEl  = div.querySelector('.routine-text');
+    const actions = div.querySelector('.routine-item-actions');
+    const item    = items.find(x => x.id === id);
+    if (!item) return;
+
+    const inp = document.createElement('input');
+    inp.type = 'text'; inp.maxLength = 120;
+    inp.className = 'routine-text-input';
+    inp.value = item.text;
+    textEl.replaceWith(inp);
+    inp.focus(); inp.select();
+
+    actions.innerHTML =
+      '<button class="routine-item-btn save" title="Save">✓</button>' +
+      '<button class="routine-item-btn del"  title="Cancel">✕</button>';
+
+    function doSave() {
+      const val = inp.value.trim();
+      if (!val) { inp.focus(); return; }
+      item.text = val; save();
+      render();
+    }
+    actions.querySelector('.save').addEventListener('click', doSave);
+    actions.querySelector('.del').addEventListener('click', render);
+    inp.addEventListener('keydown', e => {
+      if (e.key === 'Enter')  { e.preventDefault(); doSave(); }
+      if (e.key === 'Escape') render();
+    });
+  }
+
+  function resetDay() {
+    items.forEach(x => x.done = false);
+    save(); render();
+  }
+
+  // ---- Drag & Drop ----
+  let dragId = null;
+  function onDragStart(e) {
+    dragId = e.currentTarget.dataset.id;
+    e.currentTarget.classList.add('dragging');
+    e.dataTransfer.effectAllowed = 'move';
+  }
+  function onDragOver(e) {
+    e.preventDefault(); e.dataTransfer.dropEffect = 'move';
+    const over = e.currentTarget;
+    if (over.dataset.id !== dragId) over.classList.add('drag-over');
+  }
+  function onDragLeave(e) { e.currentTarget.classList.remove('drag-over'); }
+  function onDrop(e) {
+    e.preventDefault();
+    const overId = e.currentTarget.dataset.id;
+    e.currentTarget.classList.remove('drag-over');
+    if (!overId || overId === dragId) return;
+    const fromIdx = items.findIndex(x => x.id === dragId);
+    const toIdx   = items.findIndex(x => x.id === overId);
+    if (fromIdx === -1 || toIdx === -1) return;
+    const [moved] = items.splice(fromIdx, 1);
+    items.splice(toIdx, 0, moved);
+    save(); render();
+  }
+  function onDragEnd(e) {
+    e.currentTarget.classList.remove('dragging');
+    listEl.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
+  }
+
+  // ---- Init ----
+  render();
+  addBtn.addEventListener('click', addItem);
+  input.addEventListener('keydown', e => { if (e.key === 'Enter') addItem(); });
+  resetBtn.addEventListener('click', () => {
+    if (items.every(x => !x.done)) return;
+    resetBtn.textContent = 'Sure?';
+    resetBtn.style.color = '#ff8a8a';
+    clearTimeout(resetBtn._t);
+    resetBtn._t = setTimeout(() => { resetBtn.textContent = 'Reset Day'; resetBtn.style.color = ''; }, 2500);
+    resetBtn.onclick = () => {
+      resetDay();
+      resetBtn.textContent = 'Reset Day'; resetBtn.style.color = '';
+      resetBtn.onclick = null;
+      resetBtn.addEventListener('click', resetBtn._handler);
+    };
+  });
+  resetBtn._handler = resetBtn.onclick;
 })();
 </script>
 </body>
