@@ -599,12 +599,11 @@ body::after {
 .quote-wrap {
   position: relative;
   margin: 0 0 22px;
-  padding: 20px 22px 18px;
+  padding: 20px 22px 16px;
   background: rgba(255,255,255,0.03);
   border: 1px solid rgba(255,255,255,0.07);
   border-radius: 14px;
   min-height: 72px;
-  display: flex; align-items: center;
   overflow: hidden;
   cursor: default;
   user-select: none;
@@ -613,72 +612,144 @@ body::after {
   content: '';
   position: absolute; inset: 0;
   border-radius: 14px;
-  background: radial-gradient(ellipse 80% 60% at 50% 0%, rgba(110,231,183,0.04) 0%, transparent 70%);
+  background: radial-gradient(ellipse 80% 60% at 50% 0%, rgba(110,231,183,0.05) 0%, transparent 70%);
   pointer-events: none;
 }
 .quote-mark {
   position: absolute;
   top: 10px; left: 16px;
   font-size: 36px; line-height: 1;
-  color: rgba(110,231,183,0.18);
+  color: rgba(110,231,183,0.15);
   font-family: Georgia, serif;
   pointer-events: none;
   user-select: none;
 }
+.quote-body {
+  display: flex; align-items: center;
+}
 .quote-stage {
-  flex: 1;
-  padding-left: 12px;
-  position: relative;
+  flex: 1; padding-left: 12px; min-width: 0;
 }
 .quote-text {
-  font-size: 15px;
-  font-weight: 500;
-  line-height: 1.55;
-  color: var(--text-secondary);
-  letter-spacing: 0.01em;
-  transition: opacity 0.4s ease, transform 0.4s ease;
+  font-size: 15px; font-weight: 500; line-height: 1.55;
+  color: var(--text-secondary); letter-spacing: 0.01em;
+  transition: opacity 0.38s ease, transform 0.38s ease;
 }
-.quote-text.fade-out {
-  opacity: 0;
-  transform: translateY(-8px);
+.quote-text.fade-out { opacity: 0; transform: translateY(-7px); }
+.quote-text.fade-in  { opacity: 0; transform: translateY(7px); }
+.quote-footer {
+  display: flex; align-items: center; justify-content: space-between;
+  padding-left: 12px; margin-top: 10px;
 }
-.quote-text.fade-in {
-  opacity: 0;
-  transform: translateY(8px);
+.quote-dots { display: flex; gap: 5px; }
+.quote-dot {
+  width: 4px; height: 4px; border-radius: 50%;
+  background: rgba(255,255,255,0.15);
+  transition: background 0.3s, transform 0.3s;
 }
-.quote-controls {
-  display: flex; align-items: center; gap: 4px;
-  margin-left: 12px; flex-shrink: 0;
-}
+.quote-dot.active { background: rgba(110,231,183,0.7); transform: scale(1.4); }
+.quote-footer-actions { display: flex; gap: 4px; }
+.quote-controls { display: flex; align-items: center; gap: 4px; margin-left: 10px; flex-shrink: 0; }
 .quote-btn {
   display: inline-flex; align-items: center; justify-content: center;
   width: 30px; height: 30px;
   background: rgba(255,255,255,0.04);
   border: 1px solid rgba(255,255,255,0.07);
-  border-radius: 8px;
-  color: rgba(255,255,255,0.35);
+  border-radius: 8px; color: rgba(255,255,255,0.35);
   font-size: 14px; cursor: pointer;
   -webkit-tap-highlight-color: transparent;
   transition: background 0.15s, color 0.15s, transform 0.1s;
 }
 .quote-btn:hover { background: rgba(255,255,255,0.08); color: rgba(255,255,255,0.7); }
 .quote-btn:active { transform: scale(0.9); }
-.quote-dots {
-  display: flex; gap: 5px; margin-top: 10px; padding-left: 12px;
+.quote-btn.danger:hover { background: rgba(255,107,107,0.12); color: #ff8a8a; border-color: rgba(255,107,107,0.2); }
+.quote-btn.success:hover { background: rgba(110,231,183,0.12); color: #6ee7b7; border-color: rgba(110,231,183,0.2); }
+/* manage drawer */
+.quote-manager {
+  max-height: 0; overflow: hidden;
+  transition: max-height 0.35s cubic-bezier(0.4,0,0.2,1), opacity 0.25s ease;
+  opacity: 0;
 }
-.quote-dot {
-  width: 4px; height: 4px; border-radius: 50%;
-  background: rgba(255,255,255,0.15);
-  transition: background 0.3s, transform 0.3s;
+.quote-manager.open { max-height: 600px; opacity: 1; }
+.quote-add-row {
+  display: flex; gap: 8px; margin-top: 14px; padding-top: 14px;
+  border-top: 1px solid rgba(255,255,255,0.06);
 }
-.quote-dot.active {
-  background: rgba(110,231,183,0.7);
-  transform: scale(1.3);
+.quote-input {
+  flex: 1; min-width: 0;
+  background: rgba(0,0,0,0.28); color: var(--text-primary);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 10px; padding: 9px 13px;
+  font-size: 13px; font-family: inherit; outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.quote-input:focus { border-color: rgba(110,231,183,0.35); box-shadow: 0 0 0 3px rgba(110,231,183,0.08); }
+.quote-input::placeholder { color: rgba(255,255,255,0.25); }
+.quote-add-btn {
+  flex-shrink: 0;
+  padding: 9px 15px;
+  background: rgba(110,231,183,0.12);
+  border: 1px solid rgba(110,231,183,0.2);
+  border-radius: 10px; color: #6ee7b7;
+  font-size: 12px; font-weight: 700; letter-spacing: 0.06em;
+  text-transform: uppercase; cursor: pointer; font-family: inherit;
+  -webkit-tap-highlight-color: transparent;
+  transition: background 0.15s, transform 0.1s;
+  white-space: nowrap;
+}
+.quote-add-btn:hover { background: rgba(110,231,183,0.2); }
+.quote-add-btn:active { transform: scale(0.96); }
+.quote-list {
+  margin-top: 10px; display: flex; flex-direction: column; gap: 6px;
+  max-height: 260px; overflow-y: auto; padding-right: 2px;
+}
+.quote-list::-webkit-scrollbar { width: 3px; }
+.quote-list::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); border-radius: 3px; }
+.quote-list-item {
+  display: flex; align-items: center; gap: 8px;
+  padding: 9px 10px;
+  background: rgba(255,255,255,0.025);
+  border: 1px solid rgba(255,255,255,0.05);
+  border-radius: 9px;
+  transition: background 0.15s;
+}
+.quote-list-item:hover { background: rgba(255,255,255,0.04); }
+.quote-list-text {
+  flex: 1; min-width: 0; font-size: 13px; color: var(--text-secondary);
+  line-height: 1.4; overflow: hidden;
+  white-space: nowrap; text-overflow: ellipsis;
+}
+.quote-list-text.editing {
+  white-space: normal; overflow: visible;
+  background: rgba(0,0,0,0.28);
+  border: 1px solid rgba(110,231,183,0.35);
+  border-radius: 6px; padding: 4px 8px;
+  color: var(--text-primary); outline: none;
+  font-family: inherit;
+}
+.quote-list-actions { display: flex; gap: 4px; flex-shrink: 0; }
+.quote-list-btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 26px; height: 26px;
+  background: transparent; border: 1px solid transparent;
+  border-radius: 7px; cursor: pointer;
+  font-size: 12px; color: rgba(255,255,255,0.3);
+  -webkit-tap-highlight-color: transparent;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+.quote-list-btn:hover.edit-btn  { background: rgba(255,255,255,0.06); color: rgba(255,255,255,0.7); border-color: rgba(255,255,255,0.1); }
+.quote-list-btn:hover.del-btn   { background: rgba(255,107,107,0.1); color: #ff8a8a; border-color: rgba(255,107,107,0.18); }
+.quote-list-btn:hover.save-btn  { background: rgba(110,231,183,0.1); color: #6ee7b7; border-color: rgba(110,231,183,0.18); }
+.quote-error {
+  font-size: 11px; color: #ff8a8a; margin-top: 5px;
+  padding-left: 2px; min-height: 16px;
+  transition: opacity 0.2s;
 }
 @media (max-width: 480px) {
-  .quote-wrap { padding: 16px 16px 14px; min-height: 64px; }
+  .quote-wrap { padding: 16px 16px 12px; min-height: 64px; }
   .quote-text { font-size: 14px; }
   .quote-mark { font-size: 28px; top: 8px; left: 12px; }
+  .quote-add-btn { padding: 9px 11px; font-size: 11px; }
 }
 </style>
 </head>
@@ -689,13 +760,27 @@ body::after {
 
   <div class="quote-wrap" id="quoteWrap">
     <span class="quote-mark">"</span>
-    <div class="quote-stage">
-      <div class="quote-text" id="quoteText"></div>
+    <div class="quote-body">
+      <div class="quote-stage">
+        <div class="quote-text" id="quoteText"></div>
+      </div>
+      <div class="quote-controls">
+        <button class="quote-btn" id="quotePrev" aria-label="Previous quote">&#8249;</button>
+        <button class="quote-btn" id="quoteNext" aria-label="Next quote">&#8250;</button>
+        <button class="quote-btn success" id="quoteManageBtn" aria-label="Manage quotes" title="Manage quotes">&#43;</button>
+      </div>
+    </div>
+    <div class="quote-footer">
       <div class="quote-dots" id="quoteDots"></div>
     </div>
-    <div class="quote-controls">
-      <button class="quote-btn" id="quotePrev" aria-label="Previous quote">&#8249;</button>
-      <button class="quote-btn" id="quoteNext" aria-label="Next quote">&#8250;</button>
+    <div class="quote-manager" id="quoteManager">
+      <div class="quote-add-row">
+        <input class="quote-input" id="quoteInput" type="text" maxlength="200"
+               placeholder="Type a new quote…" autocomplete="off" />
+        <button class="quote-add-btn" id="quoteAddBtn">Add</button>
+      </div>
+      <div class="quote-error" id="quoteError"></div>
+      <div class="quote-list" id="quoteList"></div>
     </div>
   </div>
 
@@ -1421,50 +1506,80 @@ document.addEventListener('DOMContentLoaded', function () {
 </script>
 <script>
 // ===== Quote Shuffle =====
-// Add, edit, or remove quotes here freely.
-const QUOTES = [
-  "Discipline beats motivation.",
-  "Consistency creates results.",
-  "Stay focused on the mission.",
-  "Small steps compound into big wins.",
-  "Your future self is watching — don't let him down.",
-  "Hard work is silent. Results are loud.",
-  "Every rep, every day, every decision matters.",
-  "Comfort is the enemy of progress.",
-  "Win the morning, win the day.",
-  "Be the version of yourself you're afraid to become."
-];
-
 (function () {
+  const LS_KEY  = 'dashboard_quotes';
   const INTERVAL = 6000;
-  const textEl  = document.getElementById('quoteText');
-  const dotsEl  = document.getElementById('quoteDots');
-  const prevBtn = document.getElementById('quotePrev');
-  const nextBtn = document.getElementById('quoteNext');
-  const wrap    = document.getElementById('quoteWrap');
+
+  // Default seed quotes — only used on first load (no localStorage entry yet).
+  const DEFAULT_QUOTES = [
+    "Discipline beats motivation.",
+    "Consistency creates results.",
+    "Stay focused on the mission.",
+    "Small steps compound into big wins.",
+    "Your future self is watching — don't let him down.",
+    "Hard work is silent. Results are loud.",
+    "Every rep, every day, every decision matters.",
+    "Comfort is the enemy of progress.",
+    "Win the morning, win the day.",
+    "Be the version of yourself you're afraid to become."
+  ];
+
+  // ---- State ----
+  function loadQuotes() {
+    try {
+      const raw = localStorage.getItem(LS_KEY);
+      if (raw) {
+        const arr = JSON.parse(raw);
+        if (Array.isArray(arr) && arr.length) return arr;
+      }
+    } catch (e) {}
+    return DEFAULT_QUOTES.map((text, i) => ({ id: 'q' + i, text }));
+  }
+  function saveQuotes() {
+    try { localStorage.setItem(LS_KEY, JSON.stringify(quotes)); } catch (e) {}
+  }
+  function genId() { return 'q' + Date.now() + '_' + Math.random().toString(36).slice(2, 7); }
+
+  let quotes   = loadQuotes();
+  let current  = Math.floor(Math.random() * quotes.length);
+  let timer    = null;
+  let paused   = false;
+  let managerOpen = false;
+
+  // ---- DOM refs ----
+  const textEl      = document.getElementById('quoteText');
+  const dotsEl      = document.getElementById('quoteDots');
+  const prevBtn     = document.getElementById('quotePrev');
+  const nextBtn     = document.getElementById('quoteNext');
+  const manageBtn   = document.getElementById('quoteManageBtn');
+  const manager     = document.getElementById('quoteManager');
+  const wrap        = document.getElementById('quoteWrap');
+  const input       = document.getElementById('quoteInput');
+  const addBtn      = document.getElementById('quoteAddBtn');
+  const listEl      = document.getElementById('quoteList');
+  const errorEl     = document.getElementById('quoteError');
   if (!textEl) return;
 
-  let current = Math.floor(Math.random() * QUOTES.length);
-  let timer = null;
-  let paused = false;
-
+  // ---- Rotation ----
   function buildDots() {
-    dotsEl.innerHTML = QUOTES.map((_, i) =>
-      '<span class="quote-dot' + (i === current ? ' active' : '') + '"></span>'
+    const max = Math.min(quotes.length, 12);
+    dotsEl.innerHTML = Array.from({ length: max }, (_, i) =>
+      '<span class="quote-dot' + (i === current % max ? ' active' : '') + '"></span>'
     ).join('');
   }
-
   function updateDots() {
+    const max = Math.min(quotes.length, 12);
     dotsEl.querySelectorAll('.quote-dot').forEach((d, i) =>
-      d.classList.toggle('active', i === current)
+      d.classList.toggle('active', i === current % max)
     );
   }
-
-  function show(idx) {
-    current = (idx + QUOTES.length) % QUOTES.length;
+  function show(idx, instant) {
+    if (!quotes.length) { textEl.textContent = 'No quotes yet — add one below!'; buildDots(); return; }
+    current = ((idx % quotes.length) + quotes.length) % quotes.length;
+    if (instant) { textEl.textContent = quotes[current].text; updateDots(); return; }
     textEl.classList.add('fade-out');
     setTimeout(() => {
-      textEl.textContent = QUOTES[current];
+      textEl.textContent = quotes[current].text;
       textEl.classList.remove('fade-out');
       textEl.classList.add('fade-in');
       updateDots();
@@ -1474,28 +1589,121 @@ const QUOTES = [
         textEl.style.opacity = '1';
         textEl.style.transform = 'none';
       });
-    }, 380);
+    }, 360);
   }
-
   function startTimer() {
     clearInterval(timer);
-    timer = setInterval(() => {
-      if (!paused) show(current + 1);
-    }, INTERVAL);
+    timer = setInterval(() => { if (!paused) show(current + 1); }, INTERVAL);
   }
 
-  // Init
-  textEl.textContent = QUOTES[current];
+  // ---- Manager ----
+  function renderList() {
+    listEl.innerHTML = quotes.map((q, i) =>
+      '<div class="quote-list-item" data-id="' + q.id + '">' +
+        '<span class="quote-list-text" id="qt_' + q.id + '">' + escHtml(q.text) + '</span>' +
+        '<div class="quote-list-actions">' +
+          '<button class="quote-list-btn edit-btn" data-id="' + q.id + '" title="Edit">✎</button>' +
+          '<button class="quote-list-btn del-btn"  data-id="' + q.id + '" title="Delete">✕</button>' +
+        '</div>' +
+      '</div>'
+    ).join('');
+    listEl.querySelectorAll('.del-btn').forEach(btn =>
+      btn.addEventListener('click', () => deleteQuote(btn.dataset.id))
+    );
+    listEl.querySelectorAll('.edit-btn').forEach(btn =>
+      btn.addEventListener('click', () => startEdit(btn.dataset.id))
+    );
+  }
+  function escHtml(s) {
+    return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+  function showError(msg) {
+    errorEl.textContent = msg;
+    setTimeout(() => { if (errorEl.textContent === msg) errorEl.textContent = ''; }, 2800);
+  }
+  function addQuote() {
+    const text = input.value.trim();
+    if (!text) { showError('Quote cannot be empty.'); input.focus(); return; }
+    if (text.length < 4) { showError('Quote is too short.'); input.focus(); return; }
+    if (quotes.some(q => q.text.toLowerCase() === text.toLowerCase())) {
+      showError('This quote already exists.'); input.focus(); return;
+    }
+    const q = { id: genId(), text };
+    quotes.push(q);
+    saveQuotes();
+    input.value = '';
+    errorEl.textContent = '';
+    renderList();
+    buildDots();
+    show(quotes.length - 1);
+    startTimer();
+  }
+  function deleteQuote(id) {
+    const idx = quotes.findIndex(q => q.id === id);
+    if (idx === -1) return;
+    if (quotes.length === 1) { showError('Keep at least one quote.'); return; }
+    quotes.splice(idx, 1);
+    saveQuotes();
+    if (current >= quotes.length) current = 0;
+    renderList();
+    buildDots();
+    show(current, true);
+  }
+  function startEdit(id) {
+    const spanEl = document.getElementById('qt_' + id);
+    if (!spanEl) return;
+    const row = spanEl.closest('.quote-list-item');
+    const actionsEl = row.querySelector('.quote-list-actions');
+    const original = quotes.find(q => q.id === id).text;
+    const textarea = document.createElement('textarea');
+    textarea.className = 'quote-list-text editing';
+    textarea.value = original;
+    textarea.rows = 2;
+    textarea.style.cssText = 'width:100%;resize:none;font-size:13px;font-family:inherit;line-height:1.4';
+    spanEl.replaceWith(textarea);
+    textarea.focus();
+    textarea.setSelectionRange(textarea.value.length, textarea.value.length);
+    actionsEl.innerHTML =
+      '<button class="quote-list-btn save-btn" title="Save">✓</button>' +
+      '<button class="quote-list-btn del-btn"  data-id="' + id + '" title="Cancel">✕</button>';
+    actionsEl.querySelector('.save-btn').addEventListener('click', () => {
+      const newText = textarea.value.trim();
+      if (!newText) { showError('Quote cannot be empty.'); return; }
+      const q = quotes.find(q => q.id === id);
+      if (q) { q.text = newText; saveQuotes(); }
+      if (quotes[current] && quotes[current].id === id) show(current, true);
+      renderList();
+    });
+    actionsEl.querySelector('.del-btn').addEventListener('click', () => renderList());
+    textarea.addEventListener('keydown', e => {
+      if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); actionsEl.querySelector('.save-btn').click(); }
+      if (e.key === 'Escape') renderList();
+    });
+  }
+  function toggleManager() {
+    managerOpen = !managerOpen;
+    manager.classList.toggle('open', managerOpen);
+    manageBtn.textContent = managerOpen ? '✕' : '+';
+    manageBtn.title = managerOpen ? 'Close' : 'Manage quotes';
+    if (managerOpen) { renderList(); setTimeout(() => input.focus(), 320); paused = true; }
+    else { paused = false; }
+  }
+
+  // ---- Init ----
+  show(current, true);
   buildDots();
   startTimer();
 
   prevBtn.addEventListener('click', () => { show(current - 1); startTimer(); });
   nextBtn.addEventListener('click', () => { show(current + 1); startTimer(); });
+  manageBtn.addEventListener('click', toggleManager);
+  addBtn.addEventListener('click', addQuote);
+  input.addEventListener('keydown', e => { if (e.key === 'Enter') addQuote(); });
 
-  wrap.addEventListener('mouseenter', () => { paused = true; });
-  wrap.addEventListener('mouseleave', () => { paused = false; });
+  wrap.addEventListener('mouseenter', () => { if (!managerOpen) paused = true; });
+  wrap.addEventListener('mouseleave', () => { if (!managerOpen) paused = false; });
   wrap.addEventListener('touchstart', () => { paused = true; }, { passive: true });
-  wrap.addEventListener('touchend',   () => { setTimeout(() => { paused = false; }, 2000); }, { passive: true });
+  wrap.addEventListener('touchend',   () => { if (!managerOpen) setTimeout(() => { paused = false; }, 2500); }, { passive: true });
 })();
 </script>
 </body>
