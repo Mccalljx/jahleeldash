@@ -594,12 +594,110 @@ body::after {
   .gm-card { padding: 16px; }
   .gm-progress-num { font-size: 36px; }
 }
+
+/* ===== Quote Shuffle ===== */
+.quote-wrap {
+  position: relative;
+  margin: 0 0 22px;
+  padding: 20px 22px 18px;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 14px;
+  min-height: 72px;
+  display: flex; align-items: center;
+  overflow: hidden;
+  cursor: default;
+  user-select: none;
+}
+.quote-wrap::before {
+  content: '';
+  position: absolute; inset: 0;
+  border-radius: 14px;
+  background: radial-gradient(ellipse 80% 60% at 50% 0%, rgba(110,231,183,0.04) 0%, transparent 70%);
+  pointer-events: none;
+}
+.quote-mark {
+  position: absolute;
+  top: 10px; left: 16px;
+  font-size: 36px; line-height: 1;
+  color: rgba(110,231,183,0.18);
+  font-family: Georgia, serif;
+  pointer-events: none;
+  user-select: none;
+}
+.quote-stage {
+  flex: 1;
+  padding-left: 12px;
+  position: relative;
+}
+.quote-text {
+  font-size: 15px;
+  font-weight: 500;
+  line-height: 1.55;
+  color: var(--text-secondary);
+  letter-spacing: 0.01em;
+  transition: opacity 0.4s ease, transform 0.4s ease;
+}
+.quote-text.fade-out {
+  opacity: 0;
+  transform: translateY(-8px);
+}
+.quote-text.fade-in {
+  opacity: 0;
+  transform: translateY(8px);
+}
+.quote-controls {
+  display: flex; align-items: center; gap: 4px;
+  margin-left: 12px; flex-shrink: 0;
+}
+.quote-btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 30px; height: 30px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 8px;
+  color: rgba(255,255,255,0.35);
+  font-size: 14px; cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: background 0.15s, color 0.15s, transform 0.1s;
+}
+.quote-btn:hover { background: rgba(255,255,255,0.08); color: rgba(255,255,255,0.7); }
+.quote-btn:active { transform: scale(0.9); }
+.quote-dots {
+  display: flex; gap: 5px; margin-top: 10px; padding-left: 12px;
+}
+.quote-dot {
+  width: 4px; height: 4px; border-radius: 50%;
+  background: rgba(255,255,255,0.15);
+  transition: background 0.3s, transform 0.3s;
+}
+.quote-dot.active {
+  background: rgba(110,231,183,0.7);
+  transform: scale(1.3);
+}
+@media (max-width: 480px) {
+  .quote-wrap { padding: 16px 16px 14px; min-height: 64px; }
+  .quote-text { font-size: 14px; }
+  .quote-mark { font-size: 28px; top: 8px; left: 12px; }
+}
 </style>
 </head>
 <body>
 <div class="page">
 
   <h1 class="dash-title">Jahleel's Dashboard</h1>
+
+  <div class="quote-wrap" id="quoteWrap">
+    <span class="quote-mark">"</span>
+    <div class="quote-stage">
+      <div class="quote-text" id="quoteText"></div>
+      <div class="quote-dots" id="quoteDots"></div>
+    </div>
+    <div class="quote-controls">
+      <button class="quote-btn" id="quotePrev" aria-label="Previous quote">&#8249;</button>
+      <button class="quote-btn" id="quoteNext" aria-label="Next quote">&#8250;</button>
+    </div>
+  </div>
 
   <div class="ticker-row">
     <div class="goal-ticker" id="goalTicker" aria-live="polite" aria-atomic="true">
@@ -1320,6 +1418,85 @@ document.addEventListener('DOMContentLoaded', function () {
     }
   });
 });
+</script>
+<script>
+// ===== Quote Shuffle =====
+// Add, edit, or remove quotes here freely.
+const QUOTES = [
+  "Discipline beats motivation.",
+  "Consistency creates results.",
+  "Stay focused on the mission.",
+  "Small steps compound into big wins.",
+  "Your future self is watching — don't let him down.",
+  "Hard work is silent. Results are loud.",
+  "Every rep, every day, every decision matters.",
+  "Comfort is the enemy of progress.",
+  "Win the morning, win the day.",
+  "Be the version of yourself you're afraid to become."
+];
+
+(function () {
+  const INTERVAL = 6000;
+  const textEl  = document.getElementById('quoteText');
+  const dotsEl  = document.getElementById('quoteDots');
+  const prevBtn = document.getElementById('quotePrev');
+  const nextBtn = document.getElementById('quoteNext');
+  const wrap    = document.getElementById('quoteWrap');
+  if (!textEl) return;
+
+  let current = Math.floor(Math.random() * QUOTES.length);
+  let timer = null;
+  let paused = false;
+
+  function buildDots() {
+    dotsEl.innerHTML = QUOTES.map((_, i) =>
+      '<span class="quote-dot' + (i === current ? ' active' : '') + '"></span>'
+    ).join('');
+  }
+
+  function updateDots() {
+    dotsEl.querySelectorAll('.quote-dot').forEach((d, i) =>
+      d.classList.toggle('active', i === current)
+    );
+  }
+
+  function show(idx) {
+    current = (idx + QUOTES.length) % QUOTES.length;
+    textEl.classList.add('fade-out');
+    setTimeout(() => {
+      textEl.textContent = QUOTES[current];
+      textEl.classList.remove('fade-out');
+      textEl.classList.add('fade-in');
+      updateDots();
+      void textEl.offsetWidth;
+      requestAnimationFrame(() => {
+        textEl.classList.remove('fade-in');
+        textEl.style.opacity = '1';
+        textEl.style.transform = 'none';
+      });
+    }, 380);
+  }
+
+  function startTimer() {
+    clearInterval(timer);
+    timer = setInterval(() => {
+      if (!paused) show(current + 1);
+    }, INTERVAL);
+  }
+
+  // Init
+  textEl.textContent = QUOTES[current];
+  buildDots();
+  startTimer();
+
+  prevBtn.addEventListener('click', () => { show(current - 1); startTimer(); });
+  nextBtn.addEventListener('click', () => { show(current + 1); startTimer(); });
+
+  wrap.addEventListener('mouseenter', () => { paused = true; });
+  wrap.addEventListener('mouseleave', () => { paused = false; });
+  wrap.addEventListener('touchstart', () => { paused = true; }, { passive: true });
+  wrap.addEventListener('touchend',   () => { setTimeout(() => { paused = false; }, 2000); }, { passive: true });
+})();
 </script>
 </body>
 </html>
