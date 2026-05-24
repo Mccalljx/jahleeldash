@@ -1726,8 +1726,20 @@ img, video, canvas, svg { max-width: 100%; }
     s = s || {};
     s.units = s.units || CONFIG.units || 'kg';
     s.gyms  = (Array.isArray(s.gyms)  && s.gyms.length)  ? s.gyms  : CONFIG.gyms.slice();
-    s.days  = (Array.isArray(s.days)  && s.days.length)  ? s.days  : CONFIG.days.slice();
-    s.exercises = Array.isArray(s.exercises) ? s.exercises : buildDefaultExercises();
+    if (Array.isArray(s.days) && s.days.length) {
+      const savedDayIds = new Set(s.days.map(d => d.id));
+      CONFIG.days.forEach(d => { if (!savedDayIds.has(d.id)) s.days.push(d); });
+    } else {
+      s.days = CONFIG.days.slice();
+    }
+    if (Array.isArray(s.exercises)) {
+      const savedDayIds = new Set(s.exercises.map(e => e.day));
+      CONFIG.defaultExercises.forEach((e, i) => {
+        if (!savedDayIds.has(e.day)) s.exercises.push(Object.assign({ id: 'seed_new_' + i + '_' + Date.now() }, e));
+      });
+    } else {
+      s.exercises = buildDefaultExercises();
+    }
     s.logs = (s.logs && typeof s.logs === 'object') ? s.logs : {};
     s.filterGym = s.filterGym || s.gyms[0].id;
     s.filterDay = s.filterDay || s.days[0].id;
