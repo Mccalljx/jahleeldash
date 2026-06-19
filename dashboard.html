@@ -994,13 +994,29 @@ body::after {
   'use strict';
   const tabButtons = Array.from(document.querySelectorAll('.tab-button'));
   const tabPanels = Array.from(document.querySelectorAll('.tab-panel'));
-  function setActiveTab(name) {
+  const tabNames = ['dashboard', 'finance', 'gym', 'health', 'water'];
+  function getHashTab() {
+    const hash = window.location.hash.slice(1);
+    return tabNames.includes(hash) ? hash : null;
+  }
+  function setHashTab(name) {
+    if (window.location.hash.slice(1) !== name) {
+      history.replaceState(null, '', '#' + name);
+    }
+  }
+  function setActiveTab(name, updateHash = true) {
+    if (!tabNames.includes(name)) name = 'dashboard';
     tabButtons.forEach(btn => btn.classList.toggle('active', btn.dataset.tab === name));
     tabPanels.forEach(panel => panel.classList.toggle('active', panel.id === 'tab-' + name));
     localStorage.setItem('dashboardActiveTab', name);
+    if (updateHash) setHashTab(name);
   }
   tabButtons.forEach(btn => btn.addEventListener('click', () => setActiveTab(btn.dataset.tab)));
-  setActiveTab(localStorage.getItem('dashboardActiveTab') || 'dashboard');
+  window.addEventListener('hashchange', () => {
+    const tab = getHashTab();
+    if (tab) setActiveTab(tab, false);
+  });
+  setActiveTab(getHashTab() || localStorage.getItem('dashboardActiveTab') || 'dashboard');
 
   // Paste your Anthropic key here to enable ✨ Polish. Empty = falls back to plain add.
   const ANTHROPIC_API_KEY = '';
