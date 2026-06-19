@@ -812,6 +812,23 @@ body::after {
           </div>
         </div>
 
+        <!-- Smart Recommendations (Priority 7) -->
+        <div class="section" id="recsSection">
+          <div class="section-title">Recommendations</div>
+          <div class="gm-card" id="recsCard">
+            <div class="gm-header">
+              <div class="gm-header-left">
+                <div class="gm-eyebrow">Smart recommendations</div>
+                <div style="font-size:12px;color:var(--text-tertiary);margin-top:6px;">Up to 3 suggestions based on your dashboard state</div>
+              </div>
+              <div class="gm-progress-row" style="align-items:center;gap:8px">
+                <button id="recsRefreshBtn" class="gm-add">Refresh</button>
+              </div>
+            </div>
+            <ul id="recsList" style="margin-top:10px;list-style:none;padding:0;display:flex;flex-direction:column;gap:8px"></ul>
+          </div>
+        </div>
+
         <div class="section">
         <div class="section-title">To Do List</div>
     <div class="gm-card" id="gmCardToday">
@@ -1471,6 +1488,54 @@ body::after {
   });
   document.getElementById('skillNextInput').addEventListener('keydown', (e) => { if (e.key==='Enter') { e.preventDefault(); document.getElementById('skillNextAddBtn').click(); } });
   document.getElementById('skillRotateBtn').addEventListener('click', rotateSkills);
+
+  // ---------- Smart Recommendations (Priority 7) ----------
+  function generateRecommendations() {
+    const recs = [];
+    // Top3 check
+    try {
+      const top3 = getTop3(); if (!Array.isArray(top3) || top3.length === 0) {
+        recs.push({ id: 'top3', text: "Choose today's Top 3 priorities.", action: () => { document.getElementById('top3Input').focus(); } });
+      }
+    } catch (e) {}
+    // Deep work check
+    try { const dw = getDeepwork(); if (!dw || (dw.sessions || 0) === 0) {
+      recs.push({ id: 'deepwork', text: 'Schedule a 50-minute focus block.', action: () => { startDW(50); } });
+    } } catch (e) {}
+    // Workout check (weekly gym/run both zero)
+    try { const w = getWeekly(); if ((w.gym || 0) === 0 && (w.run || 0) === 0) {
+      recs.push({ id: 'workout', text: 'Get a workout in today.', action: () => { changeWeeklyMetric('gym',1); alert('Logged 1 gym session for this week.'); } });
+    } } catch (e) {}
+    // Financial check
+    try { const f = getFinancial(); const sCur = Number(f.savings.current || 0); const sT = Number(f.savings.target || 1); const sPct = Math.round(sCur / (sT||1) * 100);
+      const cCur = Number(f.credit.current || 0); const cT = Number(f.credit.target || 1); const cPct = Math.round(cCur / (cT||1) * 100);
+      if (sPct < 50 || cPct > 100) {
+        recs.push({ id: 'finance', text: 'Review spending this week.', action: () => { document.getElementById('finSavingsCurrent').scrollIntoView({behavior:'smooth',block:'center'}); } });
+      }
+    } catch (e) {}
+    // Deduplicate by id and limit to 3
+    const seen = new Set(); const out = [];
+    for (const r of recs) { if (!seen.has(r.id)) { out.push(r); seen.add(r.id); } if (out.length >= 3) break; }
+    return out;
+  }
+
+  function renderRecommendations() {
+    const ul = document.getElementById('recsList'); ul.innerHTML = '';
+    const recs = generateRecommendations();
+    if (recs.length === 0) {
+      const li = document.createElement('li'); li.style.color = 'var(--text-tertiary)'; li.textContent = 'All good — no suggestions right now.'; ul.appendChild(li); return;
+    }
+    recs.forEach(r => {
+      const li = document.createElement('li'); li.className = 'gm-row'; li.style.display = 'flex'; li.style.justifyContent = 'space-between'; li.style.alignItems = 'center';
+      const txt = document.createElement('div'); txt.style.flex = '1'; txt.textContent = r.text; li.appendChild(txt);
+      const btn = document.createElement('button'); btn.type = 'button'; btn.className = 'gm-add'; btn.textContent = r.id === 'deepwork' ? 'Start 50m' : (r.id==='workout'? 'Log Gym' : 'Open');
+      btn.addEventListener('click', () => { try { r.action(); renderRecommendations(); } catch (e) { console.error(e); } });
+      li.appendChild(btn);
+      ul.appendChild(li);
+    });
+  }
+  document.getElementById('recsRefreshBtn').addEventListener('click', renderRecommendations);
+
 
 
   loadToday();
