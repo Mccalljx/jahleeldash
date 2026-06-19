@@ -1545,10 +1545,13 @@ body::after {
   renderDeepwork();
   renderFinancial();
   renderWeekly();
+  renderSkillRotation();
+  renderRecommendations();
   updateDayRing();
   setInterval(updateDayRing, 60 * 1000);
   startTicker();
-  window.addEventListener('storage', () => { loadToday(); loadTomorrow(); });
+  window.addEventListener('storage', () => { loadToday(); loadTomorrow(); renderRecommendations(); });
+  window.addEventListener('goals-changed', () => { renderRecommendations(); });
 })();
 </script>
 </body>
