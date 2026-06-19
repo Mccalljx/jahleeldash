@@ -644,7 +644,33 @@ body::after {
       </div>
     </div>
 
-    <div class="section">
+      <!-- Deep Work Tracker (Priority 3) -->
+      <div class="section" id="deepWorkSection">
+        <div class="section-title">Deep Work Tracker</div>
+        <div class="gm-card" id="deepWorkCard">
+          <div class="gm-header">
+            <div class="gm-header-left">
+              <div class="gm-eyebrow">Focus Sessions</div>
+              <div style="font-size:12px;color:var(--text-tertiary);margin-top:6px;">25 / 50 / 90 minute timers • notifications</div>
+            </div>
+            <div class="gm-progress-row" style="align-items:center;">
+              <span id="dwSessions" class="gm-progress-num">0</span>
+              <span class="gm-progress-total"> sessions</span>
+            </div>
+          </div>
+          <div style="display:flex;gap:10px;align-items:center;margin:12px 0;flex-wrap:wrap;">
+            <button id="dw25Btn" class="gm-add">25</button>
+            <button id="dw50Btn" class="gm-add">50</button>
+            <button id="dw90Btn" class="gm-add">90</button>
+            <div id="dwTimerDisplay" style="margin-left:12px;font-weight:700">00:00</div>
+            <button id="dwStartBtn" class="gm-add">Start</button>
+            <button id="dwStopBtn" class="gm-add" style="background:rgba(255,0,0,0.06)">Stop</button>
+          </div>
+          <div style="font-size:12px;color:var(--text-tertiary);">Minutes today: <span id="dwMinutes">0</span></div>
+        </div>
+      </div>
+
+      <div class="section">
       <div class="section-title">To Do List</div>
     <div class="gm-card" id="gmCardToday">
       <div class="gm-header">
@@ -1103,10 +1129,51 @@ body::after {
     list.push({ text }); setFocuses(list); input.value = ''; renderFocusAreas();
   });
   document.getElementById('focusInput').addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); document.getElementById('focusAddBtn').click(); } });
+  // ---------- Deep Work Tracker (Priority 3) ----------
+  function deepworkKey() { return 'deepwork:' + getActiveDateString(); }
+  function getDeepwork() { const d = storeGet(deepworkKey()); return (d && typeof d === 'object') ? d : { sessions: 0, minutes: 0 }; }
+  function setDeepwork(obj) { storeSet(deepworkKey(), obj); }
+  let dwTimer = null; let dwEnd = 0; let dwSelectedMinutes = 25;
+  function renderDeepwork() {
+    const s = getDeepwork();
+    document.getElementById('dwSessions').textContent = s.sessions || 0;
+    document.getElementById('dwMinutes').textContent = s.minutes || 0;
+  }
+  function formatMMSS(ms) {
+    const s = Math.max(0, Math.ceil(ms / 1000)); const mm = Math.floor(s / 60); const ss = s % 60; return String(mm).padStart(2, '0') + ':' + String(ss).padStart(2, '0');
+  }
+  function updateDWDisplay() {
+    if (!dwTimer) return; const rem = dwEnd - Date.now(); if (rem <= 0) { completeDWSession(); return; } document.getElementById('dwTimerDisplay').textContent = formatMMSS(rem);
+  }
+  function startDW(minutes) {
+    if (dwTimer) clearInterval(dwTimer);
+    dwSelectedMinutes = minutes;
+    dwEnd = Date.now() + minutes * 60 * 1000;
+    dwTimer = setInterval(updateDWDisplay, 500);
+    updateDWDisplay();
+    // request notifications permission if needed
+    if ('Notification' in window && Notification.permission === 'default') Notification.requestPermission();
+  }
+  function stopDW() { if (dwTimer) { clearInterval(dwTimer); dwTimer = null; document.getElementById('dwTimerDisplay').textContent = '00:00'; } }
+  function completeDWSession() {
+    stopDW(); const s = getDeepwork(); s.sessions = (s.sessions || 0) + 1; s.minutes = (s.minutes || 0) + dwSelectedMinutes; setDeepwork(s); renderDeepwork();
+    try {
+      if ('Notification' in window && Notification.permission === 'granted') new Notification('Deep Work complete', { body: `+${dwSelectedMinutes} minutes — good job!` });
+    } catch (e) {}
+    // fallback audible/visual cue
+    try { alert('Deep work session complete — +' + dwSelectedMinutes + ' minutes'); } catch (e) {}
+  }
+  document.getElementById('dw25Btn').addEventListener('click', () => { startDW(25); });
+  document.getElementById('dw50Btn').addEventListener('click', () => { startDW(50); });
+  document.getElementById('dw90Btn').addEventListener('click', () => { startDW(90); });
+  document.getElementById('dwStartBtn').addEventListener('click', () => { startDW(dwSelectedMinutes || 25); });
+  document.getElementById('dwStopBtn').addEventListener('click', stopDW);
+
   loadToday();
   loadTomorrow();
   renderTop3();
   renderFocusAreas();
+  renderDeepwork();
   updateDayRing();
   setInterval(updateDayRing, 60 * 1000);
   startTicker();
