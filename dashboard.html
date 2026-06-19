@@ -877,6 +877,11 @@ body::after {
       <div class="goal-input-wrap gm-input-wrap">
         <input id="goalInput" class="gm-input" type="text" placeholder="Add a goal for today…" autocomplete="off">
         <button type="button" id="goalAddBtn" class="gm-add">+ Add</button>
+        <button type="button" id="goalPolishBtn" class="gm-polish">✨ Polish</button>
+      </div>
+      <div style="margin-top:8px;display:flex;gap:8px;align-items:center">
+        <button id="pushRemainingBtn" class="gm-add" style="flex:1">Move unchecked → Tomorrow</button>
+        <div id="polishStatus" class="gm-status" style="min-width:180px;color:var(--text-tertiary)"></div>
       </div>
     </div>
     <div class="gm-card" id="gmCardTomorrow">
@@ -892,13 +897,17 @@ body::after {
       <div class="goal-input-wrap gm-input-wrap">
         <input id="tomorrowInput" class="gm-input" type="text" placeholder="Add a goal for tomorrow…" autocomplete="off">
         <button type="button" id="tomorrowAddBtn" class="gm-add">+ Add</button>
+        <button type="button" id="tomorrowPolishBtn" class="gm-polish">✨ Polish</button>
       </div>
+      <div style="margin-top:8px;min-height:20px"><div id="tomorrowStatus" class="gm-status" style="color:var(--text-tertiary)"></div></div>
     </div>
   </div>
 </div>
 <script>
 (function () {
   'use strict';
+  // Paste your Anthropic key here to enable ✨ Polish. Empty = falls back to plain add.
+  const ANTHROPIC_API_KEY = '';
   const WAKE_HOUR = 8;
   const SLEEP_HOUR = 24;
   function storeGet(key) { try { return JSON.parse(localStorage.getItem(key)); } catch (e) { return null; } }
@@ -1187,7 +1196,7 @@ body::after {
   }
   function loadToday() { renderListInto(getGoals(todayKey()), document.getElementById('goalList'), document.getElementById('emptyState'), todayKey(), loadToday); }
   function loadTomorrow() { renderListInto(getGoals(tomorrowKey()), document.getElementById('tomorrowList'), document.getElementById('tomorrowEmpty'), tomorrowKey(), loadTomorrow); }
-  function makeAddHandlers(input, addBtn, key, reload) {
+  function makeAddHandlers(input, addBtn, key, reload, polishBtn, statusEl) {
     function plainAdd(text) {
       const list = getGoals(key);
       list.push({ text, done: false });
@@ -1196,14 +1205,82 @@ body::after {
       reload();
     }
     addBtn.addEventListener('click', () => {
-      const text = input.value.trim();
-      if (!text) return;
-      plainAdd(text);
+      const text = input.value.trim(); if (!text) return; plainAdd(text);
     });
     input.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); addBtn.click(); } });
+    if (polishBtn) {
+      polishBtn.addEventListener('click', async () => {
+        const text = input.value.trim(); if (!text) return;
+        if (!statusEl) statusEl = null;
+        if (!ANTHROPIC_API_KEY) {
+          if (statusEl) { statusEl.textContent = 'Polish needs an Anthropic API key — added as-typed.'; setTimeout(()=>statusEl.textContent='',3500); }
+          plainAdd(text); return;
+        }
+        // If a key is present, call the API (best-effort). If it fails, fall back.
+        try {
+          if (statusEl) statusEl.textContent = 'Polishing…';
+          const body = { model: 'claude-sonnet-4-5', messages: [{ role: 'user', content: `Clean up this single goal text and return a single JSON array of one string: ${text}` }], max_tokens: 300 };
+          const res = await fetch('https://api.anthropic.com/v1/messages', { method: 'POST', headers: { 'Content-Type':'application/json', 'x-api-key': ANTHROPIC_API_KEY }, body: JSON.stringify(body) });
+          const data = await res.json();
+          // try to find JSON array in response
+          let out = null;
+          if (data && data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content) {
+            const txt = data.choices[0].message.content;
+            const m = txt.match(/\[[\s\S]*\]/);
+            if (m) out = JSON.parse(m[0]);
+          }
+          if (Array.isArray(out) && out[0]) { plainAdd(out[0]); if (statusEl) statusEl.textContent = 'Polished & added.'; setTimeout(()=>statusEl.textContent='',3000); }
+          else { plainAdd(text); if (statusEl) statusEl.textContent = 'Polish failed — added as-typed.'; setTimeout(()=>statusEl.textContent='',3000); }
+        } catch (e) { plainAdd(text); if (statusEl) { statusEl.textContent = 'Polish failed — added as-typed.'; setTimeout(()=>statusEl.textContent='',3000); } }
+      });
+    }
   }
-  makeAddHandlers(document.getElementById('goalInput'), document.getElementById('goalAddBtn'), todayKey(), loadToday);
-  makeAddHandlers(document.getElementById('tomorrowInput'), document.getElementById('tomorrowAddBtn'), tomorrowKey(), loadTomorrow);
+  makeAddHandlers(document.getElementById('goalInput'), document.getElementById('goalAddBtn'), todayKey(), loadToday, document.getElementById('goalPolishBtn'), document.getElementById('polishStatus'));
+  makeAddHandlers(document.getElementById('tomorrowInput'), document.getElementById('tomorrowAddBtn'), tomorrowKey(), loadTomorrow, document.getElementById('tomorrowPolishBtn'), document.getElementById('tomorrowStatus'));
+
+  // Push remaining: move unchecked goals to tomorrow (dedupe exact text)
+  document.getElementById('pushRemainingBtn').addEventListener('click', () => {
+    if (!confirm('Move unchecked goals to tomorrow?')) return;
+    const today = getGoals(todayKey()); const tomorrow = getGoals(tomorrowKey()); const ttexts = new Set((tomorrow||[]).map(x=>x.text));
+    const remaining = []; today.forEach(g => { if (!g.done && !ttexts.has(g.text)) { tomorrow.push({ text: g.text, done: false }); ttexts.add(g.text); } if (g.done) remaining.push(g); });
+    setGoals(tomorrowKey(), tomorrow); setGoals(todayKey(), remaining);
+    loadTomorrow(); loadToday();
+  });
+
+  // ---------- rollover + streak processing ----------
+  function processRolloverAndStreak() {
+    const active = getActiveDateString();
+    const keys = storeListKeys('goals:').sort();
+    // move undone from older days into today
+    keys.forEach(k => {
+      const date = k.slice('goals:'.length);
+      if (date >= active) return; // only older
+      const list = getGoals(k) || [];
+      if (list.length === 0) { storeDelete(k); return; }
+      const todayList = getGoals(todayKey()); const texts = new Set(todayList.map(x=>x.text));
+      list.forEach(it => { if (!it.done && !texts.has(it.text)) { todayList.push({ text: it.text, done: false }); texts.add(it.text); } });
+      setGoals(todayKey(), todayList);
+      storeDelete(k);
+    });
+    // compute streak
+    const streakKey = 'goal_streak_v1';
+    const s = storeGet(streakKey) || { count:0, lastProcessedDate: null };
+    let streak = Number(s.count || 0);
+    const processedDates = keys.filter(k => k.slice('goals:'.length) < active).map(k => k.slice('goals:'.length)).sort();
+    let last = s.lastProcessedDate;
+    for (const d of processedDates) {
+      if (last && d <= last) continue;
+      const list = storeGet('goals:' + d) || [];
+      if (!Array.isArray(list)) continue;
+      if (list.length === 0) { last = d; continue; }
+      const allDone = list.every(x => x.done);
+      if (allDone) streak = (streak || 0) + 1; else streak = 0;
+      last = d;
+    }
+    storeSet(streakKey, { count: streak, lastProcessedDate: last || s.lastProcessedDate });
+    renderStreak();
+  }
+  function renderStreak() { const s = storeGet('goal_streak_v1') || { count:0 }; const n = Number(s.count || 0); document.getElementById('gmStreakNum').textContent = n; document.getElementById('gmStreak').classList.toggle('gm-streak-active', n > 0); }
   // ---------- Today's Top 3 (Priority 1) ----------
   function top3Key() { return 'top3:' + getActiveDateString(); }
   function getTop3() { const g = storeGet(top3Key()); return Array.isArray(g) ? g : []; }
@@ -1612,6 +1689,7 @@ body::after {
 
 
 
+  processRolloverAndStreak();
   loadToday();
   loadTomorrow();
   renderTop3();
