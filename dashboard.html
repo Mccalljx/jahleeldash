@@ -829,6 +829,30 @@ body::after {
           </div>
         </div>
 
+        <!-- Success Score (Priority 8) -->
+        <div class="section" id="scoreSection">
+          <div class="section-title">Success Score</div>
+          <div class="gm-card" id="scoreCard">
+            <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">
+              <div style="display:flex;align-items:center;gap:12px">
+                <div style="font-size:36px;font-weight:800" id="scoreValue">—/100</div>
+                <div style="display:flex;flex-direction:column">
+                  <div id="scoreBadge" style="font-weight:700;color:var(--text-tertiary)">No score yet</div>
+                  <div id="scoreMsg" style="font-size:13px;color:var(--text-tertiary);margin-top:6px"></div>
+                </div>
+              </div>
+              <div style="display:flex;gap:8px;align-items:center">
+                <button id="scoreComputeBtn" class="gm-add">Compute & Save</button>
+                <button id="scoreRefreshBtn" class="gm-add">Refresh</button>
+              </div>
+            </div>
+            <div style="margin-top:12px">
+              <div style="font-size:12px;color:var(--text-tertiary);margin-bottom:8px">Recent scores</div>
+              <ul id="scoreHistory" style="list-style:none;padding:0;margin:0;display:flex;gap:8px;flex-wrap:wrap"></ul>
+            </div>
+          </div>
+        </div>
+
         <div class="section">
         <div class="section-title">To Do List</div>
     <div class="gm-card" id="gmCardToday">
@@ -1536,6 +1560,56 @@ body::after {
   }
   document.getElementById('recsRefreshBtn').addEventListener('click', renderRecommendations);
 
+  // ---------- Success Score (Priority 8) ----------
+  function scoreKey() { return 'success_scores_v1'; }
+  function getScores() { const s = storeGet(scoreKey()); return (s && typeof s === 'object') ? s : {}; }
+  function setScores(obj) { storeSet(scoreKey(), obj); }
+  function computeSuccessForDate(dateStr) {
+    // weights
+    const W = { top3:40, goals:25, deepwork:15, gym:10, run:10 };
+    // top3 completion
+    const top3 = (storeGet('top3:' + dateStr) || []);
+    const top3Done = top3.length === 0 ? 0 : (top3.filter(t=>t.done).length / top3.length);
+    const top3Score = Math.round((top3Done || 0) * W.top3);
+    // goals completion (today)
+    const goals = (storeGet('goals:' + dateStr) || []);
+    const goalsDone = goals.length === 0 ? 0 : (goals.filter(g=>g.done).length / goals.length);
+    const goalsScore = Math.round((goalsDone || 0) * W.goals);
+    // deepwork minutes
+    const dw = (storeGet('deepwork:' + dateStr) || { sessions:0, minutes:0 });
+    const dwScore = Math.round(Math.min(1, (dw.minutes || 0) / 50) * W.deepwork);
+    // weekly metrics (use current week)
+    const w = getWeekly(); const gymScore = Math.round(Math.min(1, (w.gym||0) / (WK_TARGETS.gym||3)) * W.gym);
+    const runScore = Math.round(Math.min(1, (w.run||0) / (WK_TARGETS.run||3)) * W.run);
+    const total = top3Score + goalsScore + dwScore + gymScore + runScore;
+    return { total: Math.max(0, Math.min(100, total)), breakdown: { top3:top3Score, goals:goalsScore, deepwork:dwScore, gym:gymScore, run:runScore } };
+  }
+
+  function renderSuccessScore() {
+    const dateStr = getActiveDateString(); const s = computeSuccessForDate(dateStr);
+    const valEl = document.getElementById('scoreValue'); const badge = document.getElementById('scoreBadge'); const msg = document.getElementById('scoreMsg');
+    valEl.textContent = (s.total || 0) + '/100';
+    let color = 'var(--text-tertiary)'; let label = 'No score yet'; let note = '';
+    if (s.total >= 85) { color = 'var(--success)'; label = '🔥 Excellent day'; note = ''; }
+    else if (s.total >= 75) { color = 'green'; label = 'Great day'; }
+    else if (s.total >= 50) { color = 'var(--warning)'; label = 'Solid day'; }
+    else { color = 'var(--danger)'; label = '⚠️ Focus on your Top 3 tomorrow'; }
+    badge.textContent = label; badge.style.color = color; msg.textContent = note;
+    // history
+    const hist = getScores(); const ul = document.getElementById('scoreHistory'); ul.innerHTML = '';
+    const entries = Object.keys(hist).sort().slice(-6).reverse();
+    entries.forEach(k => {
+      const it = hist[k]; const li = document.createElement('li'); li.style.padding='6px 8px'; li.style.borderRadius='8px'; li.style.background='rgba(255,255,255,0.02)'; li.style.fontWeight='700'; li.style.fontSize='13px'; li.textContent = k + ' — ' + (it.score||0) + '/100'; ul.appendChild(li);
+    });
+  }
+
+  document.getElementById('scoreComputeBtn').addEventListener('click', () => {
+    const dateStr = getActiveDateString(); const res = computeSuccessForDate(dateStr);
+    const all = getScores(); all[dateStr] = { score: res.total, breakdown: res.breakdown, ts: Date.now() }; setScores(all); renderSuccessScore(); alert('Saved score ' + res.total + '/100 for ' + dateStr);
+  });
+  document.getElementById('scoreRefreshBtn').addEventListener('click', renderSuccessScore);
+
+
 
 
   loadToday();
@@ -1547,6 +1621,7 @@ body::after {
   renderWeekly();
   renderSkillRotation();
   renderRecommendations();
+  renderSuccessScore();
   updateDayRing();
   setInterval(updateDayRing, 60 * 1000);
   startTicker();
