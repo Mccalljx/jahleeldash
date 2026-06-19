@@ -782,6 +782,36 @@ body::after {
           </div>
         </div>
 
+        <!-- Skill Rotation (Priority 6) -->
+        <div class="section" id="skillSection">
+          <div class="section-title">Skill Rotation</div>
+          <div class="gm-card" id="skillCard">
+            <div class="gm-header">
+              <div class="gm-header-left">
+                <div class="gm-eyebrow">Current & Next Skills</div>
+                <div style="font-size:12px;color:var(--text-tertiary);margin-top:6px;">Keep two skills active; rotate from the next list</div>
+              </div>
+              <div class="gm-progress-row" style="align-items:center;">
+                <button id="skillRotateBtn" class="gm-add">Rotate</button>
+              </div>
+            </div>
+            <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin:10px 0">
+              <div style="min-width:160px">
+                <div style="font-size:12px;color:var(--text-tertiary);margin-bottom:6px">Current Skills</div>
+                <div id="skillCurrent" style="display:flex;gap:8px;flex-wrap:wrap"></div>
+              </div>
+              <div style="flex:1;min-width:220px">
+                <div style="font-size:12px;color:var(--text-tertiary);margin-bottom:6px">Next Skills</div>
+                <ul id="skillNextList" class="goal-list"></ul>
+                <div class="goal-input-wrap gm-input-wrap" style="margin-top:8px">
+                  <input id="skillNextInput" class="gm-input" type="text" placeholder="Add next skill…" autocomplete="off">
+                  <button type="button" id="skillNextAddBtn" class="gm-add">+ Add</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <div class="section">
         <div class="section-title">To Do List</div>
     <div class="gm-card" id="gmCardToday">
@@ -1369,6 +1399,79 @@ body::after {
 
   // ensure weekly key exists
   if (!storeGet(weeklyKey())) setWeekly(getWeekly());
+
+  // ---------- Skill Rotation (Priority 6) ----------
+  function skillKey() { return 'skill_rotation_v1'; }
+  function getSkills() { const s = storeGet(skillKey()); return (s && typeof s === 'object') ? s : null; }
+  function setSkills(obj) { storeSet(skillKey(), obj); }
+  function ensureDefaultSkills() {
+    let s = getSkills(); if (!s) {
+      s = { current: ['Guitar','Rubik\'s Cube'], next: ['Cooking','Style'] };
+      setSkills(s);
+    }
+  }
+  function buildNextSkillRow(item, idx, reload) {
+    const li = document.createElement('li'); li.className = 'gm-row'; li.dataset.idx = String(idx);
+    const handle = document.createElement('span'); handle.className = 'gm-handle'; handle.textContent = '⋮⋮'; li.appendChild(handle);
+    const text = document.createElement('span'); text.className = 'gm-text'; text.textContent = item; li.appendChild(text);
+    makeInlineEdit(text, idx, skillKey(), reload);
+    const promote = document.createElement('button'); promote.type = 'button'; promote.className = 'gm-add'; promote.textContent = 'Promote';
+    promote.addEventListener('click', () => { promoteNextToCurrent(idx); });
+    li.appendChild(promote);
+    const del = document.createElement('button'); del.type = 'button'; del.className = 'goal-delete'; del.textContent = '×';
+    del.addEventListener('click', () => { const s = getSkills() || { current:[], next:[] }; s.next.splice(idx,1); setSkills(s); reload(); });
+    li.appendChild(del);
+    wireDragReorder(li, skillKey(), reload);
+    return li;
+  }
+  function renderSkillRotation() {
+    ensureDefaultSkills(); const s = getSkills() || { current:[], next:[] };
+    const curEl = document.getElementById('skillCurrent'); curEl.innerHTML = '';
+    (s.current || []).forEach((name,i) => {
+      const chip = document.createElement('div'); chip.style.padding = '6px 10px'; chip.style.borderRadius = '999px'; chip.style.background = 'rgba(255,255,255,0.03)'; chip.style.display='inline-flex'; chip.style.alignItems='center'; chip.style.gap='8px';
+      const span = document.createElement('span'); span.textContent = name; span.className = 'gm-text'; chip.appendChild(span);
+      const rm = document.createElement('button'); rm.type='button'; rm.className='goal-delete'; rm.textContent='×'; rm.style.marginLeft='6px'; rm.addEventListener('click', ()=>{ removeCurrent(i); });
+      chip.appendChild(rm);
+      curEl.appendChild(chip);
+    });
+    const ul = document.getElementById('skillNextList'); ul.innerHTML = '';
+    (s.next || []).forEach((it,i)=> ul.appendChild(buildNextSkillRow(it,i, renderSkillRotation)));
+  }
+  function promoteNextToCurrent(idx) {
+    const s = getSkills() || { current:[], next:[] };
+    if (!s.next[idx]) return;
+    // ensure current has max 2, drop oldest to next end
+    const promoted = s.next.splice(idx,1)[0];
+    if (s.current.length >= 2) {
+      const moved = s.current.shift(); s.next.push(moved);
+    }
+    s.current.push(promoted);
+    setSkills(s); renderSkillRotation();
+  }
+  function rotateSkills() {
+    const s = getSkills() || { current:[], next:[] };
+    if ((s.next || []).length === 0) return;
+    // rotate: move first next into current, move first current to end of next
+    const incoming = s.next.shift(); if (s.current.length > 0) { const out = s.current.shift(); s.next.push(out); }
+    s.current.push(incoming);
+    // ensure current length <=2 by shifting extras into next
+    while (s.current.length > 2) { s.next.push(s.current.shift()); }
+    setSkills(s); renderSkillRotation();
+  }
+  function removeCurrent(i) {
+    const s = getSkills() || { current:[], next:[] };
+    if (!s.current[i]) return;
+    s.current.splice(i,1);
+    // fill from next if available
+    if ((s.next||[]).length > 0) s.current.push(s.next.shift());
+    setSkills(s); renderSkillRotation();
+  }
+  document.getElementById('skillNextAddBtn').addEventListener('click', () => {
+    const input = document.getElementById('skillNextInput'); const t = input.value.trim(); if (!t) return; const s = getSkills() || { current:[], next:[] }; s.next.push(t); setSkills(s); input.value=''; renderSkillRotation();
+  });
+  document.getElementById('skillNextInput').addEventListener('keydown', (e) => { if (e.key==='Enter') { e.preventDefault(); document.getElementById('skillNextAddBtn').click(); } });
+  document.getElementById('skillRotateBtn').addEventListener('click', rotateSkills);
+
 
   loadToday();
   loadTomorrow();
