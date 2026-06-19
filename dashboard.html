@@ -710,6 +710,78 @@ body::after {
           </div>
         </div>
 
+        <!-- Weekly Analytics (Priority 5) -->
+        <div class="section" id="weeklySection">
+          <div class="section-title">Weekly Analytics</div>
+          <div class="gm-card" id="weeklyCard">
+            <div class="gm-header">
+              <div class="gm-header-left">
+                <div class="gm-eyebrow">This week — totals</div>
+                <div style="font-size:12px;color:var(--text-tertiary);margin-top:6px;">Track gym, running, deep work, goals and Top 3 completions</div>
+              </div>
+              <div class="gm-progress-row" style="align-items:center;"></div>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:10px;margin-top:8px;">
+              <div class="wk-row">
+                <div style="display:flex;justify-content:space-between;align-items:center;">
+                  <div style="font-weight:700">Gym sessions</div>
+                  <div>
+                    <button id="wkGymDec" class="gm-add" style="padding:4px 8px">-</button>
+                    <span id="wkGymCount" style="margin:0 8px">0</span>
+                    <button id="wkGymInc" class="gm-add" style="padding:4px 8px">+</button>
+                  </div>
+                </div>
+                <div class="gm-bar"><div id="wkGymFill" style="height:8px;background:linear-gradient(90deg,var(--success),#46c78f);width:0%"></div></div>
+              </div>
+              <div class="wk-row">
+                <div style="display:flex;justify-content:space-between;align-items:center;">
+                  <div style="font-weight:700">Running sessions</div>
+                  <div>
+                    <button id="wkRunDec" class="gm-add" style="padding:4px 8px">-</button>
+                    <span id="wkRunCount" style="margin:0 8px">0</span>
+                    <button id="wkRunInc" class="gm-add" style="padding:4px 8px">+</button>
+                  </div>
+                </div>
+                <div class="gm-bar"><div id="wkRunFill" style="height:8px;background:linear-gradient(90deg,#F2C063,#e6b35a);width:0%"></div></div>
+              </div>
+              <div class="wk-row">
+                <div style="display:flex;justify-content:space-between;align-items:center;">
+                  <div style="font-weight:700">Deep work sessions</div>
+                  <div>
+                    <button id="wkDWDec" class="gm-add" style="padding:4px 8px">-</button>
+                    <span id="wkDWCount" style="margin:0 8px">0</span>
+                    <button id="wkDWInc" class="gm-add" style="padding:4px 8px">+</button>
+                  </div>
+                </div>
+                <div class="gm-bar"><div id="wkDWFill" style="height:8px;background:linear-gradient(90deg,#8ec5ff,#6bb8ff);width:0%"></div></div>
+              </div>
+              <div class="wk-row">
+                <div style="display:flex;justify-content:space-between;align-items:center;">
+                  <div style="font-weight:700">Goals completed</div>
+                  <div>
+                    <button id="wkGoalsDec" class="gm-add" style="padding:4px 8px">-</button>
+                    <span id="wkGoalsCount" style="margin:0 8px">0</span>
+                    <button id="wkGoalsInc" class="gm-add" style="padding:4px 8px">+</button>
+                  </div>
+                </div>
+                <div class="gm-bar"><div id="wkGoalsFill" style="height:8px;background:linear-gradient(90deg,#d3f7b6,#9fe89b);width:0%"></div></div>
+              </div>
+              <div class="wk-row">
+                <div style="display:flex;justify-content:space-between;align-items:center;">
+                  <div style="font-weight:700">Top 3 completed</div>
+                  <div>
+                    <button id="wkTop3Dec" class="gm-add" style="padding:4px 8px">-</button>
+                    <span id="wkTop3Count" style="margin:0 8px">0</span>
+                    <button id="wkTop3Inc" class="gm-add" style="padding:4px 8px">+</button>
+                  </div>
+                </div>
+                <div class="gm-bar"><div id="wkTop3Fill" style="height:8px;background:linear-gradient(90deg,#ffd6a5,#ffc085);width:0%"></div></div>
+              </div>
+              <div style="display:flex;justify-content:flex-end;margin-top:6px;"><button id="wkResetBtn" class="gm-add">Reset Week</button></div>
+            </div>
+          </div>
+        </div>
+
         <div class="section">
         <div class="section-title">To Do List</div>
     <div class="gm-card" id="gmCardToday">
@@ -1247,12 +1319,64 @@ body::after {
 
   // initialize defaults if missing
   (function initFinancialDefaults(){ const cur = storeGet(financialKey()); if (!cur) setFinancial(getFinancial()); })();
+  // ---------- Weekly Analytics (Priority 5) ----------
+  function isoWeekKey(d) {
+    const date = new Date(d.getTime()); date.setHours(0,0,0,0);
+    // Thursday in current week decides the year.
+    date.setDate(date.getDate() + 3 - (date.getDay() + 6) % 7);
+    const week1 = new Date(date.getFullYear(),0,4);
+    const weekNo = 1 + Math.round(((date.getTime() - week1.getTime()) / 86400000 - 3 + (week1.getDay() + 6) % 7) / 7);
+    return date.getFullYear() + '-W' + String(weekNo).padStart(2,'0');
+  }
+  function weeklyKey() { return 'weekly:' + isoWeekKey(new Date()); }
+  function getWeekly() { const w = storeGet(weeklyKey()); return (w && typeof w === 'object') ? w : { gym:0, run:0, deepwork:0, goals:0, top3:0 }; }
+  function setWeekly(obj) { storeSet(weeklyKey(), obj); }
+
+  const WK_TARGETS = { gym:3, run:3, deepwork:5, goals:20, top3:7 };
+  function renderWeekly() {
+    const w = getWeekly();
+    const metrics = ['gym','run','deepwork','goals','top3'];
+    metrics.forEach(k => {
+      const cnt = Number(w[k] || 0); document.getElementById('wk' + (k==='deepwork'?'DW':'') + (k==='top3'?'Top3':k.charAt(0).toUpperCase()+k.slice(1)) + 'Count');
+    });
+    // set counts and fills
+    document.getElementById('wkGymCount').textContent = w.gym;
+    document.getElementById('wkRunCount').textContent = w.run;
+    document.getElementById('wkDWCount').textContent = w.deepwork;
+    document.getElementById('wkGoalsCount').textContent = w.goals;
+    document.getElementById('wkTop3Count').textContent = w.top3;
+    document.getElementById('wkGymFill').style.width = Math.min(100, Math.round(w.gym / WK_TARGETS.gym * 100)) + '%';
+    document.getElementById('wkRunFill').style.width = Math.min(100, Math.round(w.run / WK_TARGETS.run * 100)) + '%';
+    document.getElementById('wkDWFill').style.width = Math.min(100, Math.round(w.deepwork / WK_TARGETS.deepwork * 100)) + '%';
+    document.getElementById('wkGoalsFill').style.width = Math.min(100, Math.round(w.goals / WK_TARGETS.goals * 100)) + '%';
+    document.getElementById('wkTop3Fill').style.width = Math.min(100, Math.round(w.top3 / WK_TARGETS.top3 * 100)) + '%';
+  }
+
+  function changeWeeklyMetric(metric, delta) {
+    const w = getWeekly(); w[metric] = Math.max(0, (w[metric] || 0) + delta); setWeekly(w); renderWeekly(); }
+
+  document.getElementById('wkGymInc').addEventListener('click', () => changeWeeklyMetric('gym',1));
+  document.getElementById('wkGymDec').addEventListener('click', () => changeWeeklyMetric('gym',-1));
+  document.getElementById('wkRunInc').addEventListener('click', () => changeWeeklyMetric('run',1));
+  document.getElementById('wkRunDec').addEventListener('click', () => changeWeeklyMetric('run',-1));
+  document.getElementById('wkDWInc').addEventListener('click', () => changeWeeklyMetric('deepwork',1));
+  document.getElementById('wkDWDec').addEventListener('click', () => changeWeeklyMetric('deepwork',-1));
+  document.getElementById('wkGoalsInc').addEventListener('click', () => changeWeeklyMetric('goals',1));
+  document.getElementById('wkGoalsDec').addEventListener('click', () => changeWeeklyMetric('goals',-1));
+  document.getElementById('wkTop3Inc').addEventListener('click', () => changeWeeklyMetric('top3',1));
+  document.getElementById('wkTop3Dec').addEventListener('click', () => changeWeeklyMetric('top3',-1));
+  document.getElementById('wkResetBtn').addEventListener('click', () => { if (!confirm('Reset this week\'s stats to zero?')) return; setWeekly({ gym:0, run:0, deepwork:0, goals:0, top3:0 }); renderWeekly(); });
+
+  // ensure weekly key exists
+  if (!storeGet(weeklyKey())) setWeekly(getWeekly());
 
   loadToday();
   loadTomorrow();
   renderTop3();
   renderFocusAreas();
   renderDeepwork();
+  renderFinancial();
+  renderWeekly();
   updateDayRing();
   setInterval(updateDayRing, 60 * 1000);
   startTicker();
