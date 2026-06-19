@@ -973,6 +973,8 @@ body::after {
       </div>
       <div style="margin-top:8px;min-height:20px"><div id="tomorrowStatus" class="gm-status" style="color:var(--text-tertiary)"></div></div>
     </div>
+  </div>
+  </div>
     <div class="tab-panel" id="tab-finance">
       <iframe class="tab-iframe" src="finance.html" title="Finance dashboard"></iframe>
     </div>
@@ -993,6 +995,10 @@ body::after {
   const tabButtons = Array.from(document.querySelectorAll('.tab-button'));
   const tabPanels = Array.from(document.querySelectorAll('.tab-panel'));
   function setActiveTab(name) {
+    if (name !== 'dashboard') {
+      window.location.href = name + '.html';
+      return;
+    }
     tabButtons.forEach(btn => btn.classList.toggle('active', btn.dataset.tab === name));
     tabPanels.forEach(panel => panel.classList.toggle('active', panel.id === 'tab-' + name));
     localStorage.setItem('dashboardActiveTab', name);
