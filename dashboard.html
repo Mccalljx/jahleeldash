@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#050506">
-<title>My Dashboard</title>
+<title>Jahleel Dashboard</title>
 <style>
 :root {
   --text-primary: #FAFAFA;
@@ -69,6 +69,43 @@ body::after {
   background-clip: text;
   -webkit-text-fill-color: transparent;
   color: transparent;
+}
+.tab-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+.tab-button {
+  border: 1px solid rgba(255,255,255,0.10);
+  background: rgba(255,255,255,0.04);
+  color: var(--text-secondary);
+  padding: 11px 16px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s, color 0.2s;
+}
+.tab-button:hover {
+  background: rgba(255,255,255,0.08);
+}
+.tab-button.active {
+  background: rgba(255,255,255,0.12);
+  border-color: rgba(255,255,255,0.18);
+  color: var(--text-primary);
+}
+.tab-content > .tab-panel { display: none; }
+.tab-content > .tab-panel.active { display: block; }
+.tab-iframe {
+  width: 100%;
+  min-height: 78vh;
+  border: none;
+  border-radius: 18px;
+  background: rgba(255,255,255,0.02);
+}
+@media (max-width: 680px) {
+  .tab-nav { justify-content: center; }
 }
 @media (max-width: 480px) { .dash-title { font-size: 22px; } }
 .ticker-row {
@@ -591,6 +628,15 @@ body::after {
 <body>
 <div class="page">
   <h1 class="dash-title">My Dashboard</h1>
+  <div class="tab-nav" role="tablist" aria-label="Dashboard tabs">
+    <button type="button" class="tab-button active" data-tab="dashboard">Dashboard</button>
+    <button type="button" class="tab-button" data-tab="finance">Finance</button>
+    <button type="button" class="tab-button" data-tab="gym">Gym</button>
+    <button type="button" class="tab-button" data-tab="health">Health</button>
+    <button type="button" class="tab-button" data-tab="water">Hydration</button>
+  </div>
+  <div class="tab-content">
+    <div class="tab-panel active" id="tab-dashboard">
   <div class="ticker-row">
     <div class="goal-ticker" id="goalTicker" aria-live="polite" aria-atomic="true">
       <div class="goal-ticker-led"><span class="goal-ticker-led-dot"></span></div>
@@ -927,11 +973,33 @@ body::after {
       </div>
       <div style="margin-top:8px;min-height:20px"><div id="tomorrowStatus" class="gm-status" style="color:var(--text-tertiary)"></div></div>
     </div>
+    <div class="tab-panel" id="tab-finance">
+      <iframe class="tab-iframe" src="finance.html" title="Finance dashboard"></iframe>
+    </div>
+    <div class="tab-panel" id="tab-gym">
+      <iframe class="tab-iframe" src="gym.html" title="Gym tracker"></iframe>
+    </div>
+    <div class="tab-panel" id="tab-health">
+      <iframe class="tab-iframe" src="health.html" title="Health dashboard"></iframe>
+    </div>
+    <div class="tab-panel" id="tab-water">
+      <iframe class="tab-iframe" src="po-water.html" title="Hydration tracker"></iframe>
+    </div>
   </div>
 </div>
 <script>
 (function () {
   'use strict';
+  const tabButtons = Array.from(document.querySelectorAll('.tab-button'));
+  const tabPanels = Array.from(document.querySelectorAll('.tab-panel'));
+  function setActiveTab(name) {
+    tabButtons.forEach(btn => btn.classList.toggle('active', btn.dataset.tab === name));
+    tabPanels.forEach(panel => panel.classList.toggle('active', panel.id === 'tab-' + name));
+    localStorage.setItem('dashboardActiveTab', name);
+  }
+  tabButtons.forEach(btn => btn.addEventListener('click', () => setActiveTab(btn.dataset.tab)));
+  setActiveTab(localStorage.getItem('dashboardActiveTab') || 'dashboard');
+
   // Paste your Anthropic key here to enable ✨ Polish. Empty = falls back to plain add.
   const ANTHROPIC_API_KEY = '';
   const WAKE_HOUR = 8;
