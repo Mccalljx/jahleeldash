@@ -670,8 +670,48 @@ body::after {
         </div>
       </div>
 
-      <div class="section">
-      <div class="section-title">To Do List</div>
+        <!-- Financial Dashboard (Priority 4) -->
+        <div class="section" id="financialSection">
+          <div class="section-title">Financial Dashboard</div>
+          <div class="gm-card" id="financialCard">
+            <div class="gm-header">
+              <div class="gm-header-left">
+                <div class="gm-eyebrow">Summer Financial Goals</div>
+                <div style="font-size:12px;color:var(--text-tertiary);margin-top:6px;">Editable progress bars — savings & credit</div>
+              </div>
+              <div class="gm-progress-row" style="align-items:center;">
+                <span class="gm-progress-num">Targets</span>
+              </div>
+            </div>
+            <div style="margin:8px 0">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+                <div style="font-weight:700">Savings Goal</div>
+                <div>
+                  <span id="finSavingsCurrent" style="margin-right:8px;cursor:pointer;color:var(--text-primary)">$0</span>
+                  / <span id="finSavingsTarget" style="margin-left:6px;cursor:pointer;color:var(--text-tertiary)">$2000</span>
+                </div>
+              </div>
+              <div class="gm-bar" id="finSavingsBar" style="height:12px;border-radius:8px;overflow:hidden;">
+                <div id="finSavingsFill" style="height:100%;background:linear-gradient(90deg,var(--success),#46c78f);width:0%"></div>
+              </div>
+            </div>
+            <div style="margin:12px 0">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+                <div style="font-weight:700">Credit Card Goal</div>
+                <div>
+                  <span id="finCreditCurrent" style="margin-right:8px;cursor:pointer;color:var(--text-primary)">$0</span>
+                  / <span id="finCreditTarget" style="margin-left:6px;cursor:pointer;color:var(--text-tertiary)">$600</span>
+                </div>
+              </div>
+              <div class="gm-bar" id="finCreditBar" style="height:12px;border-radius:8px;overflow:hidden;">
+                <div id="finCreditFill" style="height:100%;background:linear-gradient(90deg,#F2C063,#e6b35a);width:0%"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="section">
+        <div class="section-title">To Do List</div>
     <div class="gm-card" id="gmCardToday">
       <div class="gm-header">
         <div class="gm-header-left">
@@ -1168,6 +1208,45 @@ body::after {
   document.getElementById('dw90Btn').addEventListener('click', () => { startDW(90); });
   document.getElementById('dwStartBtn').addEventListener('click', () => { startDW(dwSelectedMinutes || 25); });
   document.getElementById('dwStopBtn').addEventListener('click', stopDW);
+
+  // ---------- Financial Dashboard (Priority 4) ----------
+  function financialKey() { return 'financial_goals_v1'; }
+  function getFinancial() { const f = storeGet(financialKey()); if (f && typeof f === 'object') return f; return { savings: { target: 2000, current: 0 }, credit: { target: 600, current: 0 } }; }
+  function setFinancial(obj) { storeSet(financialKey(), obj); }
+
+  function renderFinancial() {
+    const f = getFinancial();
+    const sCur = Number(f.savings.current || 0); const sT = Number(f.savings.target || 1);
+    const cCur = Number(f.credit.current || 0); const cT = Number(f.credit.target || 1);
+    document.getElementById('finSavingsCurrent').textContent = '$' + Math.round(sCur);
+    document.getElementById('finSavingsTarget').textContent = '$' + Math.round(sT);
+    const sPct = Math.max(0, Math.min(100, Math.round(sCur / (sT || 1) * 100)));
+    document.getElementById('finSavingsFill').style.width = sPct + '%';
+    document.getElementById('finCreditCurrent').textContent = '$' + Math.round(cCur);
+    document.getElementById('finCreditTarget').textContent = '$' + Math.round(cT);
+    const cPct = Math.max(0, Math.min(100, Math.round(cCur / (cT || 1) * 100)));
+    document.getElementById('finCreditFill').style.width = cPct + '%';
+  }
+
+  function promptNumber(title, defaultVal) {
+    const v = prompt(title, String(defaultVal)); if (v === null) return null; const n = parseFloat(v.replace(/[^0-9.-]/g, '')); return Number.isFinite(n) ? n : null;
+  }
+
+  document.getElementById('finSavingsCurrent').addEventListener('click', () => {
+    const f = getFinancial(); const n = promptNumber('Set current savings amount', f.savings.current || 0); if (n === null) return; f.savings.current = n; setFinancial(f); renderFinancial();
+  });
+  document.getElementById('finSavingsTarget').addEventListener('click', () => {
+    const f = getFinancial(); const n = promptNumber('Set savings target', f.savings.target || 2000); if (n === null) return; f.savings.target = n; setFinancial(f); renderFinancial();
+  });
+  document.getElementById('finCreditCurrent').addEventListener('click', () => {
+    const f = getFinancial(); const n = promptNumber('Set credit current balance', f.credit.current || 0); if (n === null) return; f.credit.current = n; setFinancial(f); renderFinancial();
+  });
+  document.getElementById('finCreditTarget').addEventListener('click', () => {
+    const f = getFinancial(); const n = promptNumber('Set credit goal', f.credit.target || 600); if (n === null) return; f.credit.target = n; setFinancial(f); renderFinancial();
+  });
+
+  // initialize defaults if missing
+  (function initFinancialDefaults(){ const cur = storeGet(financialKey()); if (!cur) setFinancial(getFinancial()); })();
 
   loadToday();
   loadTomorrow();
