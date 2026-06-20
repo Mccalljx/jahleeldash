@@ -1,0 +1,576 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>My Dashboard</title>
+  <style>
+    :root{
+      --bg:#050506; --text-primary:#FAFAFA; --text-secondary:#B8B6B0; --text-tertiary:#76746E;
+      --success:#6BE3A4; --warning:#F2C063; --danger:#FF6B6B;
+      --card: rgba(255,255,255,0.04);
+      --maxw:1100px;
+      --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+      --sys: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+    html,body{height:100%;}
+    body{font-family:var(--sys);background:var(--bg);color:var(--text-primary);display:flex;align-items:flex-start;justify-content:center;padding:48px 20px;box-sizing:border-box;}
+    body::before{content:"";position:fixed;inset:0;z-index:-2;background:radial-gradient(40rem 40rem at 82% 14%, rgba(224,118,88,0.16), transparent 12%), radial-gradient(50rem 50rem at 18% 90%, rgba(180,180,200,0.06), transparent 18%);filter:blur(40px);animation:drift 36s ease-in-out infinite alternate;}
+    @keyframes drift{from{transform:translate(0,0);}to{transform:translate(-8px,6px);}}
+    body::after{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;background-image:linear-gradient(transparent, transparent);mask-image:linear-gradient(#000,#000);opacity:1;background-size:3px 3px;background-image:repeating-linear-gradient(0deg, rgba(255,255,255,0.014) 0 1px, transparent 1px 3px);}
+    .wrap{width:100%;max-width:var(--maxw);} 
+    .card{background:var(--card);border-radius:16px;padding:18px;backdrop-filter:blur(24px) saturate(1.2);box-shadow:0 12px 40px rgba(0,0,0,0.45);margin-bottom:18px}
+    .dash-title{font-size:28px;font-weight:700;letter-spacing:-0.025em;margin:0 0 14px;background:linear-gradient(180deg,#FFFFFF 0%,#C7C4BC 120%);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+    @media(max-width:480px){.dash-title{font-size:22px}}
+
+    /* Ticker */
+    .goal-ticker{display:flex;align-items:center;gap:10px;padding:7px 12px;border-radius:12px;position:relative;overflow:hidden;background:linear-gradient(180deg, rgba(0,0,0,0.42), rgba(0,0,0,0.30));background-image:linear-gradient(180deg, rgba(0,0,0,0.42), rgba(0,0,0,0.30)),repeating-linear-gradient(0deg, rgba(255,255,255,0.025) 0, rgba(255,255,255,0.025) 1px, transparent 1px, transparent 3px);box-shadow:inset 0 1px 0 rgba(255,255,255,0.04);}
+    .goal-ticker::after{content:"";position:absolute;left:-40%;top:0;height:100%;width:30%;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.04),transparent);animation:sweep 8s linear infinite}
+    @keyframes sweep{to{left:110%}}
+    .goal-ticker-led{display:flex;align-items:center;justify-content:center;width:22px}
+    .goal-ticker-led-dot{width:7px;height:7px;border-radius:50%;background:var(--success);box-shadow:0 0 8px rgba(107,227,164,0.7);animation:ledPulse 1.6s infinite}
+    @keyframes ledPulse{50%{opacity:0.45;transform:scale(0.85)}}
+    .goal-ticker-label{font-family:var(--mono);font-size:9.5px;font-weight:800;letter-spacing:0.18em;color:var(--text-tertiary)}
+    .goal-ticker-stage{flex:1;position:relative;overflow:hidden;height:22px}
+    .goal-ticker-row{display:flex;align-items:center;gap:8px;height:22px;white-space:nowrap;font-family:var(--mono);font-weight:600;font-size:12.5px}
+    .goal-ticker-status{width:18px;display:inline-flex;align-items:center;justify-content:center}
+    .goal-ticker-text{flex:1;overflow:hidden;text-overflow:ellipsis}
+    .goal-ticker-meta{font-family:var(--mono);font-size:11px;font-weight:700;color:var(--text-secondary);padding:3px 8px;border-radius:999px;background:rgba(255,255,255,0.04)}
+    .ticker-entering{animation:tickerEnter 0.45s cubic-bezier(0.22,1,0.36,1) forwards}
+    .ticker-leaving{animation:tickerLeave 0.45s cubic-bezier(0.55,0,0.55,1) forwards}
+    @keyframes tickerEnter{from{opacity:0;transform:translateY(100%)}to{opacity:1;transform:translateY(0)}}
+    @keyframes tickerLeave{from{opacity:1;transform:translateY(0)}to{opacity:0;transform:translateY(-100%)}}
+
+    /* layout for ring + lists */
+    .row{display:flex;gap:26px;align-items:flex-start;flex-wrap:wrap}
+    .left{flex:0 0 168px}
+    .right{flex:1;min-width:260px}
+    .ring-wrap{width:168px;height:168px;position:relative}
+    .ring-overlay{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none}
+    .ring-overlay .percent{font-size:40px;font-weight:800;font-family:var(--mono);letter-spacing:-0.04em}
+    .ring-overlay .phase{font-size:9.5px;font-family:var(--mono);font-weight:800;letter-spacing:0.16em;color:var(--text-tertiary);margin-top:6px}
+    .ring-overlay .clock{font-size:10.5px;font-family:var(--mono);color:var(--text-tertiary);margin-top:6px}
+
+    /* Section title */
+    .section-title{font-size:10.5px;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:var(--text-tertiary);display:flex;align-items:center;gap:12px}
+    .section-title::before{content:'';width:18px;height:1px;background:var(--text-tertiary);opacity:0.6}
+    .section-title::after{content:'';flex:1;height:1px;background:linear-gradient(90deg, rgba(255,255,255,0.08), transparent)}
+
+    /* To Do layout */
+    .gm-list{list-style:none;padding:0;margin:0}
+    .goal-row{display:flex;gap:12px;align-items:center;padding:12px;border-radius:12px;background:rgba(255,255,255,0.035);border:1px solid rgba(255,255,255,0.02);margin-bottom:6px}
+    .goal-row.done{opacity:0.45;background:rgba(107,227,164,0.04);text-decoration:line-through;text-decoration-color:rgba(255,255,255,0.4)}
+    .drag-handle{width:20px;opacity:0.0;transition:opacity .18s;cursor:grab}
+    .goal-row:hover .drag-handle{opacity:1}
+    .cb{width:22px;height:22px;border-radius:7px;border:1.5px solid rgba(255,255,255,0.18);display:inline-flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.2);cursor:pointer}
+    .cb.checked{background:var(--success);box-shadow:0 0 12px rgba(107,227,164,0.4);}
+    .goal-text{flex:1;outline:none}
+    .btn{padding:6px 10px;border-radius:10px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.02);cursor:pointer}
+
+    /* Top3, Focus, Deepwork, Financial */
+    .top3-row{display:flex;gap:10px}
+    .top3-item{flex:1;padding:10px;border-radius:10px;background:rgba(255,255,255,0.03)}
+    .focus-list{display:flex;gap:8px;flex-wrap:wrap}
+    .focus-item{padding:8px 10px;border-radius:8px;background:rgba(255,255,255,0.02);cursor:pointer}
+
+    .small{font-size:12px;color:var(--text-secondary)}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1 class="dash-title">My Dashboard</h1>
+
+    <div class="card">
+      <div id="goalTicker" class="goal-ticker" aria-live="polite" aria-atomic="true">
+        <div class="goal-ticker-led"><span class="goal-ticker-led-dot"></span></div>
+        <div class="goal-ticker-label">GOALS</div>
+        <div class="goal-ticker-stage" id="goalTickerStage">
+          <div class="goal-ticker-row"><span class="goal-ticker-status">·</span><span class="goal-ticker-text">Loading…</span></div>
+        </div>
+        <div class="goal-ticker-meta" id="goalTickerMeta">0/0</div>
+      </div>
+    </div>
+
+    <div class="card row">
+      <div class="left ring-wrap card">
+        <svg viewBox="0 0 120 120" width="168" height="168">
+          <defs>
+            <filter id="glow"><feGaussianBlur stdDeviation="4" result="b"/></filter>
+          </defs>
+          <circle cx="60" cy="60" r="52" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="8"/>
+          <circle id="ringFill" cx="60" cy="60" r="52" fill="none" stroke-linecap="round" stroke-width="8" stroke="rgb(255,216,158)" transform="rotate(-90 60 60)" style="transition:stroke 0.7s cubic-bezier(0.22,1,0.36,1), stroke-dashoffset 0.7s cubic-bezier(0.22,1,0.36,1)"/>
+        </svg>
+        <div class="ring-overlay">
+          <div class="percent" id="dayPercent">—</div>
+          <div class="phase" id="dayPhase">SLEEPING</div>
+          <div class="clock" id="dayClock">—</div>
+        </div>
+      </div>
+
+      <div class="right">
+        <div class="section">
+          <div class="section-title">To Do List</div>
+          <div class="card" id="todayCard">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap">
+              <div>
+                <div id="todayLabel" class="small">Today — Loading</div>
+                <div style="display:flex;align-items:baseline;gap:6px">
+                  <div id="gmProgressNum" style="font-size:42px;font-weight:700;font-family:var(--mono)">0</div>
+                  <div id="gmProgressTotal" class="small">/ 0</div>
+                  <div id="gmProgressLabel" class="small">no goals yet</div>
+                </div>
+              </div>
+              <div id="gmStreak" style="display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:999px;background:rgba(255,255,255,0.04)">⚡ <span id="gmStreakNum" style="font-family:var(--mono);font-weight:700">0</span> <span style="text-transform:uppercase;font-size:11px;letter-spacing:0.1em">day streak</span></div>
+            </div>
+
+            <div id="gmBar" style="display:flex;gap:4px;margin:12px 0;height:6px"></div>
+
+            <ul id="goalList" class="goal-list gm-list"></ul>
+            <div id="emptyState" class="empty-state small">No goals for today yet — add one below.</div>
+
+            <div style="margin-top:14px;border-top:1px solid rgba(255,255,255,0.02);padding-top:14px;display:flex;gap:8px">
+              <input id="goalInput" placeholder="Add a goal for today…" style="flex:1;padding:11px;border-radius:12px;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.02);outline:none;color:var(--text-primary)" />
+              <button id="goalAddBtn" class="btn">+ Add</button>
+              <button id="goalPolishBtn" class="btn">✨ Polish</button>
+            </div>
+            <div id="polishStatus" class="small" style="margin-top:8px;color:var(--text-tertiary)"></div>
+            <div style="margin-top:10px"><button id="gmPushBtn" class="btn" style="width:100%;display:none">Push remaining to tomorrow</button></div>
+          </div>
+
+          <div class="card" style="margin-top:12px" id="tomorrowCard">
+            <div style="display:flex;justify-content:space-between"><div><div id="tomorrowLabel" class="small">Plan tomorrow — Loading</div><div class="small">Write tonight, locked until 6 AM.</div></div><div id="gmTomorrowCount" class="small">0 planned</div></div>
+            <ul id="tomorrowList" class="gm-list" style="margin-top:12px"></ul>
+            <div style="margin-top:12px;border-top:1px solid rgba(255,255,255,0.02);padding-top:12px;display:flex;gap:8px">
+              <input id="tomorrowInput" placeholder="Plan for tomorrow…" style="flex:1;padding:11px;border-radius:12px;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.02);outline:none;color:var(--text-primary)" />
+              <button id="tomorrowAddBtn" class="btn">+ Add</button>
+              <button id="tomorrowPolishBtn" class="btn">✨ Polish</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="section" style="margin-top:12px">
+          <div class="section-title">Today's Top 3</div>
+          <div class="card">
+            <div id="top3Wrap" class="top3-row"></div>
+            <div style="margin-top:10px;display:flex;gap:8px">
+              <input id="top3Input" placeholder="Add top priority…" style="flex:1;padding:8px;border-radius:10px;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.02);outline:none;color:var(--text-primary)" />
+              <button id="top3AddBtn" class="btn">+ Add</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="section" style="margin-top:12px">
+          <div class="section-title">Focus Areas</div>
+          <div class="card">
+            <div id="focusWrap" class="focus-list"></div>
+            <div style="margin-top:10px;display:flex;gap:8px">
+              <input id="focusInput" placeholder="Add focus area…" style="flex:1;padding:8px;border-radius:10px;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.02);outline:none;color:var(--text-primary)" />
+              <button id="focusAddBtn" class="btn">+ Add</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="section" style="margin-top:12px">
+          <div class="section-title">Deep Work</div>
+          <div class="card" id="deepCard">
+            <div style="display:flex;gap:8px">
+              <button class="btn" data-mins="25" id="dw25">25</button>
+              <button class="btn" data-mins="50" id="dw50">50</button>
+              <button class="btn" data-mins="90" id="dw90">90</button>
+            </div>
+            <div style="margin-top:10px" class="small">Sessions today: <span id="dwSessions">0</span> · Minutes: <span id="dwMinutes">0</span></div>
+          </div>
+        </div>
+
+        <div class="section" style="margin-top:12px">
+          <div class="section-title">Financial Goals</div>
+          <div class="card">
+            <div><label class="small">Savings Goal</label><div style="height:12px;background:rgba(255,255,255,0.02);border-radius:8px;margin-top:6px;overflow:hidden"><div id="savBar" style="height:100%;width:0;background:var(--success)"></div></div><input id="savInput" type="number" placeholder="Amount" style="margin-top:8px;padding:8px;border-radius:8px;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.02)" /></div>
+            <div style="margin-top:12px"><label class="small">Credit Card Goal</label><div style="height:12px;background:rgba(255,255,255,0.02);border-radius:8px;margin-top:6px;overflow:hidden"><div id="ccBar" style="height:100%;width:0;background:var(--warning)"></div></div><input id="ccInput" type="number" placeholder="Amount" style="margin-top:8px;padding:8px;border-radius:8px;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.02)" /></div>
+            <div style="margin-top:8px"><button id="saveFinancial" class="btn">Save</button></div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Helpers
+    const ANTHROPIC_API_KEY = '';
+    function storeGet(k){try{return JSON.parse(localStorage.getItem(k))}catch(e){return null}}
+    function storeSet(k,v){localStorage.setItem(k,JSON.stringify(v));return v}
+    function storeDelete(k){localStorage.removeItem(k)}
+    function storeListKeys(prefix){const out=[];for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k.startsWith(prefix))out.push(k)}return out}
+
+    // Active date logic (6 AM boundary)
+    function getActiveDateObj(now=new Date()){const h=now.getHours();if(h<6){now.setDate(now.getDate()-1)}return new Date(now.getFullYear(),now.getMonth(),now.getDate())}
+    function fmtDateKey(d){return d.toISOString().slice(0,10)}
+    function formatDisplay(dateStr){const d=new Date(dateStr);const opts={weekday:'short',month:'short',day:'numeric'};return d.toLocaleDateString(undefined,opts)}
+    function getTodayKey(){return fmtDateKey(getActiveDateObj())}
+    function getTomorrowKey(){const now=new Date();const today=getActiveDateObj(now);today.setDate(today.getDate()+1);return fmtDateKey(today)}
+
+    // Rollover: move undone from older than active date into today
+    function rollover(){const active=getTodayKey();const keys=storeListKeys('goals:');keys.sort();for(const k of keys){if(k===`goals:${active}`)continue; const d=k.slice(6); if(d<active){const arr=storeGet(k)||[];const undone=arr.filter(g=>!g.done).map(g=>g.text); if(undone.length){const today=storeGet(`goals:${active}`)||[]; for(const t of undone) if(!today.find(x=>x.text===t)) today.push({text:t,done:false}); storeSet(`goals:${active}`,today);} storeDelete(k);} }}
+
+    // Streak check
+    function computeStreak(){const st=storeGet('goal_streak_v1')||{count:0,lastProcessedDate:null};const active=getTodayKey();const keys=storeListKeys('goals:').map(k=>k.slice(6)).filter(d=>d<=active).sort();let count=0;for(const d of keys){const arr=storeGet('goals:'+d)||[];if(arr.length===0)continue; const allDone=arr.every(g=>g.done); if(allDone) count++; else {count=0}} st.count=count; st.lastProcessedDate=active; storeSet('goal_streak_v1',st); return st.count}
+
+    // Ticker
+    let tickerItems=[]; let tickerIdx=0; let tickerInterval=null;
+    function buildTicker(){const key=`goals:${getTodayKey()}`;const arr=storeGet(key)||[];const total=arr.length;const doneCount=arr.filter(g=>g.done).length; const pending=arr.filter(g=>!g.done); if(total===0){tickerItems=[{status:'empty',text:'No goals set for today — add one to get rolling.'}]}else if(doneCount===total){tickerItems=[{status:'done',text:'✓ All goals done — solid day.'}]}else tickerItems=pending.map(g=>({status:'pending',text:g.text})); document.getElementById('goalTickerMeta').textContent=`${doneCount}/${total}`; tickerIdx=0}
+    function tickOnce(initial=false){const stage=document.getElementById('goalTickerStage'); if(!tickerItems.length) buildTicker(); const item=tickerItems[tickerIdx%tickerItems.length]; const row=document.createElement('div'); row.className='goal-ticker-row ticker-entering'; const status=document.createElement('span'); status.className='goal-ticker-status'; status.textContent = item.status==='done'?'✓':(item.status==='pending'?'○':'·'); status.style.color = item.status==='done'?getComputedStyle(document.documentElement).getPropertyValue('--success'):'var(--text-tertiary)'; const txt=document.createElement('span'); txt.className='goal-ticker-text'; txt.textContent=item.text; row.appendChild(status); row.appendChild(txt); if(stage.firstChild){const old=stage.firstChild; old.classList.add('ticker-leaving'); setTimeout(()=>old.remove(),460)} stage.appendChild(row); tickerIdx++;}
+    function startTicker(){buildTicker(); tickOnce(true); tickerInterval=setInterval(()=>{buildTicker(); tickOnce();},5000)}
+    window.addEventListener('goals-changed',()=>{buildTicker(); tickOnce(); tickerIdx=0})
+
+    // Day ring
+    const WAKE_HOUR=8, SLEEP_HOUR=24;
+    function updateDayRing(){const now=new Date();const hours = now.getHours()+now.getMinutes()/60+now.getSeconds()/3600; const key=getTodayKey(); const percentEl=document.getElementById('dayPercent'); const phaseEl=document.getElementById('dayPhase'); const clockEl=document.getElementById('dayClock'); const ring=document.getElementById('ringFill'); const C=2*Math.PI*52; ring.setAttribute('stroke-dasharray',C);
+      let percent=0; let phase='SLEEPING'; let statusText=''; let stroke='rgb(77,75,71)'; if(hours<WAKE_HOUR){percent=0; phase='SLEEPING'; statusText='😴 Still sleeping'; const until=WAKE_HOUR-hours; const h=Math.floor(until); const m=Math.round((until-h)*60); document.getElementById('dayPercent').textContent='—'; phaseEl.textContent=phase; clockEl.textContent=`${formatClock(now)} · ${h}h ${m}m until wake-up`; stroke='rgb(77,75,71)'; }
+      else if(hours>=WAKE_HOUR && hours<=SLEEP_HOUR){percent=(hours-WAKE_HOUR)/(SLEEP_HOUR-WAKE_HOUR)*100; phase = phaseLabel(percent); document.getElementById('dayPercent').textContent=Math.round(percent)+'%'; phaseEl.textContent=phase; clockEl.textContent=formatClock(now); stroke = sunColor(percent);
+      } else {percent=100; document.getElementById('dayPercent').textContent='100%'; phaseEl.textContent='PAST BEDTIME'; clockEl.textContent='Sleep!'; stroke='#E25D7A'}
+      const offset=C*(1-percent/100); ring.style.stroke=stroke; ring.style.strokeDashoffset=offset; }
+    function formatClock(now){let h=now.getHours(); const m=String(now.getMinutes()).padStart(2,'0'); const ap=h>=12?'PM':'AM'; h = h%12||12; return `${h}:${m} ${ap}`}
+    function phaseLabel(p){if(p<25) return 'MORNING'; if(p<50) return 'MIDDAY'; if(p<75) return 'AFTERNOON'; if(p<90) return 'EVENING'; return 'BEDTIME'}
+    function lerp(a,b,t){return a+(b-a)*t}
+    const stops=[[255,216,158],[255,205,121],[255,227,143],[255,183,106],[255,149,89],[243,111,79],[226,93,122],[123,91,176],[47,58,102]]
+    function sunColor(p){const pct=p/100*(stops.length-1); const i=Math.floor(pct); const t=pct-i; const a=stops[i]||stops[stops.length-1]; const b=stops[i+1]||a; return `rgb(${Math.round(lerp(a[0],b[0],t))},${Math.round(lerp(a[1],b[1],t))},${Math.round(lerp(a[2],b[2],t))})`}
+
+    // To do list management
+    function loadList(key){return storeGet(key)||[]}
+    function saveList(key,arr){storeSet(key,arr);window.dispatchEvent(new CustomEvent('goals-changed'))}
+    function renderToday(){const key='goals:'+getTodayKey(); const arr=loadList(key); document.getElementById('goalList').innerHTML=''; if(arr.length===0)document.getElementById('emptyState').style.display='block'; else document.getElementById('emptyState').style.display='none'; let done=0; arr.forEach((g,i)=>{const li=document.createElement('li'); li.className='goal-row'+(g.done?' done':''); const drag=document.createElement('div'); drag.className='drag-handle'; drag.textContent='⋮⋮'; drag.draggable=true; drag.addEventListener('dragstart',e=>e.dataTransfer.setData('text/plain',i)); li.appendChild(drag); const cb=document.createElement('div'); cb.className='cb'+(g.done?' checked':''); cb.addEventListener('click',()=>{g.done=!g.done; if(g.done)g.doneAt=Date.now(); saveList(key,arr); renderToday();}); li.appendChild(cb); const txt=document.createElement('div'); txt.className='goal-text'; txt.contentEditable=true; txt.textContent=g.text; txt.addEventListener('blur',()=>{g.text=txt.textContent.trim()||g.text; saveList(key,arr); renderToday();}); txt.addEventListener('keydown',ev=>{if(ev.key==='Enter'){ev.preventDefault(); txt.blur()} if(ev.key==='Escape'){txt.textContent=g.text; txt.blur()}}); li.appendChild(txt); const qbtn=document.createElement('button'); qbtn.className='btn gm-queue-btn'; qbtn.textContent='⚡'; qbtn.addEventListener('click',()=>{g.queued=!g.queued; saveList(key,arr); li.classList.add('queue-flash'); setTimeout(()=>{li.classList.remove('queue-flash'); renderToday()},500)}); li.appendChild(qbtn); const del=document.createElement('button'); del.className='btn goal-delete'; del.textContent='×'; del.addEventListener('click',()=>{arr.splice(i,1); saveList(key,arr); renderToday()}); li.appendChild(del);
+      document.getElementById('goalList').appendChild(li); if(g.done) done++; }); document.getElementById('gmProgressNum').textContent=done; document.getElementById('gmProgressTotal').textContent=`/ ${arr.length}`; document.getElementById('gmProgressLabel').textContent=arr.length===0?'no goals yet':(done===arr.length?'all done — solid day':'in progress'); // bar
+      const bar=document.getElementById('gmBar'); bar.innerHTML=''; arr.forEach(g=>{const s=document.createElement('div'); s.className='gm-bar-seg'+(g.done?' gm-bar-seg-done':''); s.style.flex='1'; s.style.background=g.done?getComputedStyle(document.documentElement).getPropertyValue('--success'):'rgba(255,255,255,0.02)'; bar.appendChild(s)});
+      document.getElementById('gmPushBtn').style.display=arr.some(g=>!g.done)?'block':'none';
+    }
+    function renderTomorrow(){const key='goals:'+getTomorrowKey(); const arr=loadList(key); const ul=document.getElementById('tomorrowList'); ul.innerHTML=''; arr.forEach((g,i)=>{const li=document.createElement('li'); li.className='goal-row'; const cb=document.createElement('div'); cb.className='cb'; cb.title='Activates at 6 AM tomorrow'; li.appendChild(cb); const txt=document.createElement('div'); txt.className='goal-text'; txt.contentEditable=true; txt.textContent=g.text; txt.addEventListener('blur',()=>{g.text=txt.textContent.trim()||g.text; saveList(key,arr); renderTomorrow();}); const del=document.createElement('button'); del.className='btn goal-delete'; del.textContent='×'; del.addEventListener('click',()=>{arr.splice(i,1); saveList(key,arr); renderTomorrow()}); li.appendChild(txt); li.appendChild(del); ul.appendChild(li)}); document.getElementById('gmTomorrowCount').textContent=`${arr.length} planned`}
+
+    // Add handlers
+    document.getElementById('goalAddBtn').addEventListener('click',()=>{const v=document.getElementById('goalInput').value.trim(); if(!v) return; const key='goals:'+getTodayKey(); const arr=loadList(key); arr.push({text:v,done:false}); saveList(key,arr); document.getElementById('goalInput').value=''; renderToday();})
+    document.getElementById('tomorrowAddBtn').addEventListener('click',()=>{const v=document.getElementById('tomorrowInput').value.trim(); if(!v) return; const key='goals:'+getTomorrowKey(); const arr=loadList(key); arr.push({text:v,done:false}); saveList(key,arr); document.getElementById('tomorrowInput').value=''; renderTomorrow();})
+    document.getElementById('goalInput').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault(); document.getElementById('goalAddBtn').click()}})
+
+    // Push remaining
+    document.getElementById('gmPushBtn').addEventListener('click',()=>{if(!confirm('Push remaining unchecked goals to tomorrow?'))return; const todayK='goals:'+getTodayKey(); const tomK='goals:'+getTomorrowKey(); const today=loadList(todayK); const tom=loadList(tomK); const remaining=today.filter(g=>!g.done).map(g=>g.text); for(const t of remaining){ if(!tom.find(x=>x.text===t)) tom.push({text:t,done:false}) } const kept=today.filter(g=>g.done); saveList(todayK,kept); saveList(tomK,tom); renderToday(); renderTomorrow(); })
+
+    // Top3
+    function top3Key(){return 'top3:'+getTodayKey()}
+    function loadTop3(){return storeGet(top3Key())||[]}
+    function renderTop3(){const wrap=document.getElementById('top3Wrap'); wrap.innerHTML=''; const arr=loadTop3(); for(let i=0;i<3;i++){const obj=arr[i]; const div=document.createElement('div'); div.className='top3-item'; if(obj){const cb=document.createElement('div'); cb.style.display='inline-block'; cb.style.marginRight='8px'; cb.textContent=obj.done?'✓':''; cb.style.fontFamily='var(--mono)'; cb.style.cursor='pointer'; cb.addEventListener('click',()=>{obj.done=!obj.done; storeSet(top3Key(),arr); renderTop3();}); div.appendChild(cb); const txt=document.createElement('span'); txt.contentEditable=true; txt.textContent=obj.text; txt.addEventListener('blur',()=>{obj.text=txt.textContent.trim(); storeSet(top3Key(),arr); renderTop3();}); div.appendChild(txt);} else {div.textContent='—';} wrap.appendChild(div)} const doneAll=arr.length===3 && arr.every(x=>x && x.done); if(doneAll) wrap.style.background='radial-gradient(circle at top, rgba(107,227,164,0.08), transparent)'}
+    document.getElementById('top3AddBtn').addEventListener('click',()=>{const v=document.getElementById('top3Input').value.trim(); if(!v) return; const arr=loadTop3(); if(arr.length>=3) return alert('Top 3 full'); arr.push({text:v,done:false}); storeSet(top3Key(),arr); document.getElementById('top3Input').value=''; renderTop3();})
+
+    // Focus areas
+    const defaultFocus=['CCNA','AI Assistant','Fitness','Money'];
+    function focusKey(){return 'focus_v1'}
+    function loadFocus(){return storeGet(focusKey())||defaultFocus.slice()}
+    function renderFocus(){const wrap=document.getElementById('focusWrap'); wrap.innerHTML=''; const arr=loadFocus(); arr.slice(0,5).forEach((f,i)=>{const div=document.createElement('div'); div.className='focus-item'; div.textContent=f; div.addEventListener('click',()=>{const t=prompt('Edit focus',f); if(t!==null){arr[i]=t.trim(); storeSet(focusKey(),arr); renderFocus()}}); const del=document.createElement('button'); del.textContent='×'; del.style.marginLeft='8px'; del.addEventListener('click',(e)=>{e.stopPropagation(); arr.splice(i,1); storeSet(focusKey(),arr); renderFocus()}); div.appendChild(del); wrap.appendChild(div)}); document.getElementById('focusWrap').appendChild(document.createElement('div'))}
+    document.getElementById('focusAddBtn').addEventListener('click',()=>{const v=document.getElementById('focusInput').value.trim(); if(!v) return; const arr=loadFocus(); if(arr.length>=5) return alert('Max 5 focuses'); arr.push(v); storeSet(focusKey(),arr); document.getElementById('focusInput').value=''; renderFocus();})
+
+    // Deep work
+    function dwKey(){return 'deepwork:'+getTodayKey()}
+    function loadDW(){return storeGet(dwKey())||{sessions:0,minutes:0}}
+    function renderDW(){const d=loadDW(); document.getElementById('dwSessions').textContent=d.sessions; document.getElementById('dwMinutes').textContent=d.minutes}
+    async function startTimer(mins){if(Notification.permission!=='granted'){try{await Notification.requestPermission()}catch(e){}} const ms=mins*60*1000; const start=Date.now(); setTimeout(()=>{const d=loadDW(); d.sessions++; d.minutes+=mins; storeSet(dwKey(),d); renderDW(); try{if(Notification.permission==='granted') new Notification('Deep work session complete', {body:`${mins} minutes finished`})}catch(e){} },ms)}
+    document.getElementById('dw25').addEventListener('click',()=>startTimer(25)); document.getElementById('dw50').addEventListener('click',()=>startTimer(50)); document.getElementById('dw90').addEventListener('click',()=>startTimer(90));
+
+    // Financial
+    function finKey(){return 'financial_goals_v1'}
+    function loadFin(){return storeGet(finKey())||{savings:2000,savings_progress:0,cc_goal:600,cc_progress:0}}
+    function renderFin(){const f=loadFin(); document.getElementById('savBar').style.width=Math.min(100,Math.round(f.savings_progress/f.savings*100))+'%'; document.getElementById('ccBar').style.width=Math.min(100,Math.round(f.cc_progress/f.cc_goal*100))+'%'; document.getElementById('savInput').value=f.savings_progress; document.getElementById('ccInput').value=f.cc_progress}
+    document.getElementById('saveFinancial').addEventListener('click',()=>{const f=loadFin(); f.savings_progress=Number(document.getElementById('savInput').value||0); f.cc_progress=Number(document.getElementById('ccInput').value||0); storeSet(finKey(),f); renderFin()})
+
+    // Init
+    function init(){rollover(); computeStreak(); buildTicker(); startTicker(); updateDayRing(); renderToday(); renderTomorrow(); renderTop3(); renderFocus(); renderDW(); renderFin(); setInterval(updateDayRing,60000)}
+    init();
+  </script>
+</body>
+</html>
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>My Dashboard</title>
+  <style>
+    :root{
+      --bg:#050506; --text-primary:#FAFAFA; --text-secondary:#B8B6B0; --text-tertiary:#76746E;
+      --success:#6BE3A4; --warning:#F2C063; --danger:#FF6B6B;
+      --card: rgba(255,255,255,0.04);
+      --maxw:1100px;
+      --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+      --sys: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+    html,body{height:100%;}
+    body{font-family:var(--sys);background:var(--bg);color:var(--text-primary);display:flex;align-items:flex-start;justify-content:center;padding:48px 20px;box-sizing:border-box;}
+    body::before{content:"";position:fixed;inset:0;z-index:-2;background:radial-gradient(40rem 40rem at 82% 14%, rgba(224,118,88,0.16), transparent 12%), radial-gradient(50rem 50rem at 18% 90%, rgba(180,180,200,0.06), transparent 18%);filter:blur(40px);animation:drift 36s ease-in-out infinite alternate;}
+    @keyframes drift{from{transform:translate(0,0);}to{transform:translate(-8px,6px);}}
+    body::after{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;background-image:linear-gradient(transparent, transparent);mask-image:linear-gradient(#000,#000);opacity:1;background-size:3px 3px;background-image:repeating-linear-gradient(0deg, rgba(255,255,255,0.014) 0 1px, transparent 1px 3px);}
+    .wrap{width:100%;max-width:var(--maxw);} 
+    .card{background:var(--card);border-radius:16px;padding:18px;backdrop-filter:blur(24px) saturate(1.2);box-shadow:0 12px 40px rgba(0,0,0,0.45);margin-bottom:18px}
+    .dash-title{font-size:28px;font-weight:700;letter-spacing:-0.025em;margin:0 0 14px;background:linear-gradient(180deg,#FFFFFF 0%,#C7C4BC 120%);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+    @media(max-width:480px){.dash-title{font-size:22px}}
+
+    /* Ticker */
+    .goal-ticker{display:flex;align-items:center;gap:10px;padding:7px 12px;border-radius:12px;position:relative;overflow:hidden;background:linear-gradient(180deg, rgba(0,0,0,0.42), rgba(0,0,0,0.30));background-image:linear-gradient(180deg, rgba(0,0,0,0.42), rgba(0,0,0,0.30)),repeating-linear-gradient(0deg, rgba(255,255,255,0.025) 0, rgba(255,255,255,0.025) 1px, transparent 1px, transparent 3px);box-shadow:inset 0 1px 0 rgba(255,255,255,0.04);}
+    .goal-ticker::after{content:"";position:absolute;left:-40%;top:0;height:100%;width:30%;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.04),transparent);animation:sweep 8s linear infinite}
+    @keyframes sweep{to{left:110%}}
+    .goal-ticker-led{display:flex;align-items:center;justify-content:center;width:22px}
+    .goal-ticker-led-dot{width:7px;height:7px;border-radius:50%;background:var(--success);box-shadow:0 0 8px rgba(107,227,164,0.7);animation:ledPulse 1.6s infinite}
+    @keyframes ledPulse{50%{opacity:0.45;transform:scale(0.85)}}
+    .goal-ticker-label{font-family:var(--mono);font-size:9.5px;font-weight:800;letter-spacing:0.18em;color:var(--text-tertiary)}
+    .goal-ticker-stage{flex:1;position:relative;overflow:hidden;height:22px}
+    .goal-ticker-row{display:flex;align-items:center;gap:8px;height:22px;white-space:nowrap;font-family:var(--mono);font-weight:600;font-size:12.5px}
+    .goal-ticker-status{width:18px;display:inline-flex;align-items:center;justify-content:center}
+    .goal-ticker-text{flex:1;overflow:hidden;text-overflow:ellipsis}
+    .goal-ticker-meta{font-family:var(--mono);font-size:11px;font-weight:700;color:var(--text-secondary);padding:3px 8px;border-radius:999px;background:rgba(255,255,255,0.04)}
+    .ticker-entering{animation:tickerEnter 0.45s cubic-bezier(0.22,1,0.36,1) forwards}
+    .ticker-leaving{animation:tickerLeave 0.45s cubic-bezier(0.55,0,0.55,1) forwards}
+    @keyframes tickerEnter{from{opacity:0;transform:translateY(100%)}to{opacity:1;transform:translateY(0)}}
+    @keyframes tickerLeave{from{opacity:1;transform:translateY(0)}to{opacity:0;transform:translateY(-100%)}}
+
+    /* layout for ring + lists */
+    .row{display:flex;gap:26px;align-items:flex-start;flex-wrap:wrap}
+    .left{flex:0 0 168px}
+    .right{flex:1;min-width:260px}
+    .ring-wrap{width:168px;height:168px;position:relative}
+    .ring-overlay{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none}
+    .ring-overlay .percent{font-size:40px;font-weight:800;font-family:var(--mono);letter-spacing:-0.04em}
+    .ring-overlay .phase{font-size:9.5px;font-family:var(--mono);font-weight:800;letter-spacing:0.16em;color:var(--text-tertiary);margin-top:6px}
+    .ring-overlay .clock{font-size:10.5px;font-family:var(--mono);color:var(--text-tertiary);margin-top:6px}
+
+    /* Section title */
+    .section-title{font-size:10.5px;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:var(--text-tertiary);display:flex;align-items:center;gap:12px}
+    .section-title::before{content:'';width:18px;height:1px;background:var(--text-tertiary);opacity:0.6}
+    .section-title::after{content:'';flex:1;height:1px;background:linear-gradient(90deg, rgba(255,255,255,0.08), transparent)}
+
+    /* To Do layout */
+    .gm-list{list-style:none;padding:0;margin:0}
+    .goal-row{display:flex;gap:12px;align-items:center;padding:12px;border-radius:12px;background:rgba(255,255,255,0.035);border:1px solid rgba(255,255,255,0.02);margin-bottom:6px}
+    .goal-row.done{opacity:0.45;background:rgba(107,227,164,0.04);text-decoration:line-through;text-decoration-color:rgba(255,255,255,0.4)}
+    .drag-handle{width:20px;opacity:0.0;transition:opacity .18s;cursor:grab}
+    .goal-row:hover .drag-handle{opacity:1}
+    .cb{width:22px;height:22px;border-radius:7px;border:1.5px solid rgba(255,255,255,0.18);display:inline-flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.2);cursor:pointer}
+    .cb.checked{background:var(--success);box-shadow:0 0 12px rgba(107,227,164,0.4);}
+    .goal-text{flex:1;outline:none}
+    .btn{padding:6px 10px;border-radius:10px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.02);cursor:pointer}
+
+    /* Top3, Focus, Deepwork, Financial */
+    .top3-row{display:flex;gap:10px}
+    .top3-item{flex:1;padding:10px;border-radius:10px;background:rgba(255,255,255,0.03)}
+    .focus-list{display:flex;gap:8px;flex-wrap:wrap}
+    .focus-item{padding:8px 10px;border-radius:8px;background:rgba(255,255,255,0.02);cursor:pointer}
+
+    .small{font-size:12px;color:var(--text-secondary)}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1 class="dash-title">My Dashboard</h1>
+
+    <div class="card">
+      <div id="goalTicker" class="goal-ticker" aria-live="polite" aria-atomic="true">
+        <div class="goal-ticker-led"><span class="goal-ticker-led-dot"></span></div>
+        <div class="goal-ticker-label">GOALS</div>
+        <div class="goal-ticker-stage" id="goalTickerStage">
+          <div class="goal-ticker-row"><span class="goal-ticker-status">·</span><span class="goal-ticker-text">Loading…</span></div>
+        </div>
+        <div class="goal-ticker-meta" id="goalTickerMeta">0/0</div>
+      </div>
+    </div>
+
+    <div class="card row">
+      <div class="left ring-wrap card">
+        <svg viewBox="0 0 120 120" width="168" height="168">
+          <defs>
+            <filter id="glow"><feGaussianBlur stdDeviation="4" result="b"/></filter>
+          </defs>
+          <circle cx="60" cy="60" r="52" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="8"/>
+          <circle id="ringFill" cx="60" cy="60" r="52" fill="none" stroke-linecap="round" stroke-width="8" stroke="rgb(255,216,158)" transform="rotate(-90 60 60)" style="transition:stroke 0.7s cubic-bezier(0.22,1,0.36,1), stroke-dashoffset 0.7s cubic-bezier(0.22,1,0.36,1)"/>
+        </svg>
+        <div class="ring-overlay">
+          <div class="percent" id="dayPercent">—</div>
+          <div class="phase" id="dayPhase">SLEEPING</div>
+          <div class="clock" id="dayClock">—</div>
+        </div>
+      </div>
+
+      <div class="right">
+        <div class="section">
+          <div class="section-title">To Do List</div>
+          <div class="card" id="todayCard">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap">
+              <div>
+                <div id="todayLabel" class="small">Today — Loading</div>
+                <div style="display:flex;align-items:baseline;gap:6px">
+                  <div id="gmProgressNum" style="font-size:42px;font-weight:700;font-family:var(--mono)">0</div>
+                  <div id="gmProgressTotal" class="small">/ 0</div>
+                  <div id="gmProgressLabel" class="small">no goals yet</div>
+                </div>
+              </div>
+              <div id="gmStreak" style="display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:999px;background:rgba(255,255,255,0.04)">⚡ <span id="gmStreakNum" style="font-family:var(--mono);font-weight:700">0</span> <span style="text-transform:uppercase;font-size:11px;letter-spacing:0.1em">day streak</span></div>
+            </div>
+
+            <div id="gmBar" style="display:flex;gap:4px;margin:12px 0;height:6px"></div>
+
+            <ul id="goalList" class="goal-list gm-list"></ul>
+            <div id="emptyState" class="empty-state small">No goals for today yet — add one below.</div>
+
+            <div style="margin-top:14px;border-top:1px solid rgba(255,255,255,0.02);padding-top:14px;display:flex;gap:8px">
+              <input id="goalInput" placeholder="Add a goal for today…" style="flex:1;padding:11px;border-radius:12px;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.02);outline:none;color:var(--text-primary)" />
+              <button id="goalAddBtn" class="btn">+ Add</button>
+              <button id="goalPolishBtn" class="btn">✨ Polish</button>
+            </div>
+            <div id="polishStatus" class="small" style="margin-top:8px;color:var(--text-tertiary)"></div>
+            <div style="margin-top:10px"><button id="gmPushBtn" class="btn" style="width:100%;display:none">Push remaining to tomorrow</button></div>
+          </div>
+
+          <div class="card" style="margin-top:12px" id="tomorrowCard">
+            <div style="display:flex;justify-content:space-between"><div><div id="tomorrowLabel" class="small">Plan tomorrow — Loading</div><div class="small">Write tonight, locked until 6 AM.</div></div><div id="gmTomorrowCount" class="small">0 planned</div></div>
+            <ul id="tomorrowList" class="gm-list" style="margin-top:12px"></ul>
+            <div style="margin-top:12px;border-top:1px solid rgba(255,255,255,0.02);padding-top:12px;display:flex;gap:8px">
+              <input id="tomorrowInput" placeholder="Plan for tomorrow…" style="flex:1;padding:11px;border-radius:12px;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.02);outline:none;color:var(--text-primary)" />
+              <button id="tomorrowAddBtn" class="btn">+ Add</button>
+              <button id="tomorrowPolishBtn" class="btn">✨ Polish</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="section" style="margin-top:12px">
+          <div class="section-title">Today's Top 3</div>
+          <div class="card">
+            <div id="top3Wrap" class="top3-row"></div>
+            <div style="margin-top:10px;display:flex;gap:8px">
+              <input id="top3Input" placeholder="Add top priority…" style="flex:1;padding:8px;border-radius:10px;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.02);outline:none;color:var(--text-primary)" />
+              <button id="top3AddBtn" class="btn">+ Add</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="section" style="margin-top:12px">
+          <div class="section-title">Focus Areas</div>
+          <div class="card">
+            <div id="focusWrap" class="focus-list"></div>
+            <div style="margin-top:10px;display:flex;gap:8px">
+              <input id="focusInput" placeholder="Add focus area…" style="flex:1;padding:8px;border-radius:10px;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.02);outline:none;color:var(--text-primary)" />
+              <button id="focusAddBtn" class="btn">+ Add</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="section" style="margin-top:12px">
+          <div class="section-title">Deep Work</div>
+          <div class="card" id="deepCard">
+            <div style="display:flex;gap:8px">
+              <button class="btn" data-mins="25" id="dw25">25</button>
+              <button class="btn" data-mins="50" id="dw50">50</button>
+              <button class="btn" data-mins="90" id="dw90">90</button>
+            </div>
+            <div style="margin-top:10px" class="small">Sessions today: <span id="dwSessions">0</span> · Minutes: <span id="dwMinutes">0</span></div>
+          </div>
+        </div>
+
+        <div class="section" style="margin-top:12px">
+          <div class="section-title">Financial Goals</div>
+          <div class="card">
+            <div><label class="small">Savings Goal</label><div style="height:12px;background:rgba(255,255,255,0.02);border-radius:8px;margin-top:6px;overflow:hidden"><div id="savBar" style="height:100%;width:0;background:var(--success)"></div></div><input id="savInput" type="number" placeholder="Amount" style="margin-top:8px;padding:8px;border-radius:8px;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.02)" /></div>
+            <div style="margin-top:12px"><label class="small">Credit Card Goal</label><div style="height:12px;background:rgba(255,255,255,0.02);border-radius:8px;margin-top:6px;overflow:hidden"><div id="ccBar" style="height:100%;width:0;background:var(--warning)"></div></div><input id="ccInput" type="number" placeholder="Amount" style="margin-top:8px;padding:8px;border-radius:8px;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.02)" /></div>
+            <div style="margin-top:8px"><button id="saveFinancial" class="btn">Save</button></div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Helpers
+    const ANTHROPIC_API_KEY = '';
+    function storeGet(k){try{return JSON.parse(localStorage.getItem(k))}catch(e){return null}}
+    function storeSet(k,v){localStorage.setItem(k,JSON.stringify(v));return v}
+    function storeDelete(k){localStorage.removeItem(k)}
+    function storeListKeys(prefix){const out=[];for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k.startsWith(prefix))out.push(k)}return out}
+
+    // Active date logic (6 AM boundary)
+    function getActiveDateObj(now=new Date()){const h=now.getHours();if(h<6){now.setDate(now.getDate()-1)}return new Date(now.getFullYear(),now.getMonth(),now.getDate())}
+    function fmtDateKey(d){return d.toISOString().slice(0,10)}
+    function formatDisplay(dateStr){const d=new Date(dateStr);const opts={weekday:'short',month:'short',day:'numeric'};return d.toLocaleDateString(undefined,opts)}
+    function getTodayKey(){return fmtDateKey(getActiveDateObj())}
+    function getTomorrowKey(){const now=new Date();const today=getActiveDateObj(now);today.setDate(today.getDate()+1);return fmtDateKey(today)}
+
+    // Rollover: move undone from older than active date into today
+    function rollover(){const active=getTodayKey();const keys=storeListKeys('goals:');keys.sort();for(const k of keys){if(k===`goals:${active}`)continue; const d=k.slice(6); if(d<active){const arr=storeGet(k)||[];const undone=arr.filter(g=>!g.done).map(g=>g.text); if(undone.length){const today=storeGet(`goals:${active}`)||[]; for(const t of undone) if(!today.find(x=>x.text===t)) today.push({text:t,done:false}); storeSet(`goals:${active}`,today);} storeDelete(k);} }}
+
+    // Streak check
+    function computeStreak(){const st=storeGet('goal_streak_v1')||{count:0,lastProcessedDate:null};const active=getTodayKey();const keys=storeListKeys('goals:').map(k=>k.slice(6)).filter(d=>d<=active).sort();let count=0;for(const d of keys){const arr=storeGet('goals:'+d)||[];if(arr.length===0)continue; const allDone=arr.every(g=>g.done); if(allDone) count++; else {count=0}} st.count=count; st.lastProcessedDate=active; storeSet('goal_streak_v1',st); return st.count}
+
+    // Ticker
+    let tickerItems=[]; let tickerIdx=0; let tickerInterval=null;
+    function buildTicker(){const key=`goals:${getTodayKey()}`;const arr=storeGet(key)||[];const total=arr.length;const doneCount=arr.filter(g=>g.done).length; const pending=arr.filter(g=>!g.done); if(total===0){tickerItems=[{status:'empty',text:'No goals set for today — add one to get rolling.'}]}else if(doneCount===total){tickerItems=[{status:'done',text:'✓ All goals done — solid day.'}]}else tickerItems=pending.map(g=>({status:'pending',text:g.text})); document.getElementById('goalTickerMeta').textContent=`${doneCount}/${total}`; tickerIdx=0}
+    function tickOnce(initial=false){const stage=document.getElementById('goalTickerStage'); if(!tickerItems.length) buildTicker(); const item=tickerItems[tickerIdx%tickerItems.length]; const row=document.createElement('div'); row.className='goal-ticker-row ticker-entering'; const status=document.createElement('span'); status.className='goal-ticker-status'; status.textContent = item.status==='done'?'✓':(item.status==='pending'?'○':'·'); status.style.color = item.status==='done'?getComputedStyle(document.documentElement).getPropertyValue('--success'):'var(--text-tertiary)'; const txt=document.createElement('span'); txt.className='goal-ticker-text'; txt.textContent=item.text; row.appendChild(status); row.appendChild(txt); if(stage.firstChild){const old=stage.firstChild; old.classList.add('ticker-leaving'); setTimeout(()=>old.remove(),460)} stage.appendChild(row); tickerIdx++;}
+    function startTicker(){buildTicker(); tickOnce(true); tickerInterval=setInterval(()=>{buildTicker(); tickOnce();},5000)}
+    window.addEventListener('goals-changed',()=>{buildTicker(); tickOnce(); tickerIdx=0})
+
+    // Day ring
+    const WAKE_HOUR=8, SLEEP_HOUR=24;
+    function updateDayRing(){const now=new Date();const hours = now.getHours()+now.getMinutes()/60+now.getSeconds()/3600; const key=getTodayKey(); const percentEl=document.getElementById('dayPercent'); const phaseEl=document.getElementById('dayPhase'); const clockEl=document.getElementById('dayClock'); const ring=document.getElementById('ringFill'); const C=2*Math.PI*52; ring.setAttribute('stroke-dasharray',C);
+      let percent=0; let phase='SLEEPING'; let statusText=''; let stroke='rgb(77,75,71)'; if(hours<WAKE_HOUR){percent=0; phase='SLEEPING'; statusText='😴 Still sleeping'; const until=WAKE_HOUR-hours; const h=Math.floor(until); const m=Math.round((until-h)*60); document.getElementById('dayPercent').textContent='—'; phaseEl.textContent=phase; clockEl.textContent=`${formatClock(now)} · ${h}h ${m}m until wake-up`; stroke='rgb(77,75,71)'; }
+      else if(hours>=WAKE_HOUR && hours<=SLEEP_HOUR){percent=(hours-WAKE_HOUR)/(SLEEP_HOUR-WAKE_HOUR)*100; phase = phaseLabel(percent); document.getElementById('dayPercent').textContent=Math.round(percent)+'%'; phaseEl.textContent=phase; clockEl.textContent=formatClock(now); stroke = sunColor(percent);
+      } else {percent=100; document.getElementById('dayPercent').textContent='100%'; phaseEl.textContent='PAST BEDTIME'; clockEl.textContent='Sleep!'; stroke='#E25D7A'}
+      const offset=C*(1-percent/100); ring.style.stroke=stroke; ring.style.strokeDashoffset=offset; }
+    function formatClock(now){let h=now.getHours(); const m=String(now.getMinutes()).padStart(2,'0'); const ap=h>=12?'PM':'AM'; h = h%12||12; return `${h}:${m} ${ap}`}    
+    function phaseLabel(p){if(p<25) return 'MORNING'; if(p<50) return 'MIDDAY'; if(p<75) return 'AFTERNOON'; if(p<90) return 'EVENING'; return 'BEDTIME'}
+    function lerp(a,b,t){return a+(b-a)*t}
+    const stops=[[255,216,158],[255,205,121],[255,227,143],[255,183,106],[255,149,89],[243,111,79],[226,93,122],[123,91,176],[47,58,102]]
+    function sunColor(p){const pct=p/100*(stops.length-1); const i=Math.floor(pct); const t=pct-i; const a=stops[i]||stops[stops.length-1]; const b=stops[i+1]||a; return `rgb(${Math.round(lerp(a[0],b[0],t))},${Math.round(lerp(a[1],b[1],t))},${Math.round(lerp(a[2],b[2],t))})`}
+
+    // To do list management
+    function loadList(key){return storeGet(key)||[]}
+    function saveList(key,arr){storeSet(key,arr);window.dispatchEvent(new CustomEvent('goals-changed'))}
+    function renderToday(){const key='goals:'+getTodayKey(); const arr=loadList(key); document.getElementById('goalList').innerHTML=''; if(arr.length===0)document.getElementById('emptyState').style.display='block'; else document.getElementById('emptyState').style.display='none'; let done=0; arr.forEach((g,i)=>{const li=document.createElement('li'); li.className='goal-row'+(g.done?' done':''); const drag=document.createElement('div'); drag.className='drag-handle'; drag.textContent='⋮⋮'; drag.draggable=true; drag.addEventListener('dragstart',e=>e.dataTransfer.setData('text/plain',i)); li.appendChild(drag); const cb=document.createElement('div'); cb.className='cb'+(g.done?' checked':''); cb.addEventListener('click',()=>{g.done=!g.done; if(g.done)g.doneAt=Date.now(); saveList(key,arr); renderToday();}); li.appendChild(cb); const txt=document.createElement('div'); txt.className='goal-text'; txt.contentEditable=true; txt.textContent=g.text; txt.addEventListener('blur',()=>{g.text=txt.textContent.trim()||g.text; saveList(key,arr); renderToday();}); txt.addEventListener('keydown',ev=>{if(ev.key==='Enter'){ev.preventDefault(); txt.blur()} if(ev.key==='Escape'){txt.textContent=g.text; txt.blur()}}); li.appendChild(txt); const qbtn=document.createElement('button'); qbtn.className='btn gm-queue-btn'; qbtn.textContent='⚡'; qbtn.addEventListener('click',()=>{g.queued=!g.queued; saveList(key,arr); li.classList.add('queue-flash'); setTimeout(()=>{li.classList.remove('queue-flash'); renderToday()},500)}); li.appendChild(qbtn); const del=document.createElement('button'); del.className='btn goal-delete'; del.textContent='×'; del.addEventListener('click',()=>{arr.splice(i,1); saveList(key,arr); renderToday()}); li.appendChild(del);
+      document.getElementById('goalList').appendChild(li); if(g.done) done++; }); document.getElementById('gmProgressNum').textContent=done; document.getElementById('gmProgressTotal').textContent=`/ ${arr.length}`; document.getElementById('gmProgressLabel').textContent=arr.length===0?'no goals yet':(done===arr.length?'all done — solid day':'in progress'); // bar
+      const bar=document.getElementById('gmBar'); bar.innerHTML=''; arr.forEach(g=>{const s=document.createElement('div'); s.className='gm-bar-seg'+(g.done?' gm-bar-seg-done':''); s.style.flex='1'; s.style.background=g.done?getComputedStyle(document.documentElement).getPropertyValue('--success'):'rgba(255,255,255,0.02)'; bar.appendChild(s)});
+      document.getElementById('gmPushBtn').style.display=arr.some(g=>!g.done)?'block':'none';
+    }
+    function renderTomorrow(){const key='goals:'+getTomorrowKey(); const arr=loadList(key); const ul=document.getElementById('tomorrowList'); ul.innerHTML=''; arr.forEach((g,i)=>{const li=document.createElement('li'); li.className='goal-row'; const cb=document.createElement('div'); cb.className='cb'; cb.title='Activates at 6 AM tomorrow'; li.appendChild(cb); const txt=document.createElement('div'); txt.className='goal-text'; txt.contentEditable=true; txt.textContent=g.text; txt.addEventListener('blur',()=>{g.text=txt.textContent.trim()||g.text; saveList(key,arr); renderTomorrow();}); const del=document.createElement('button'); del.className='btn goal-delete'; del.textContent='×'; del.addEventListener('click',()=>{arr.splice(i,1); saveList(key,arr); renderTomorrow()}); li.appendChild(txt); li.appendChild(del); ul.appendChild(li)}); document.getElementById('gmTomorrowCount').textContent=`${arr.length} planned`}
+
+    // Add handlers
+    document.getElementById('goalAddBtn').addEventListener('click',()=>{const v=document.getElementById('goalInput').value.trim(); if(!v) return; const key='goals:'+getTodayKey(); const arr=loadList(key); arr.push({text:v,done:false}); saveList(key,arr); document.getElementById('goalInput').value=''; renderToday();})
+    document.getElementById('tomorrowAddBtn').addEventListener('click',()=>{const v=document.getElementById('tomorrowInput').value.trim(); if(!v) return; const key='goals:'+getTomorrowKey(); const arr=loadList(key); arr.push({text:v,done:false}); saveList(key,arr); document.getElementById('tomorrowInput').value=''; renderTomorrow();})
+    document.getElementById('goalInput').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault(); document.getElementById('goalAddBtn').click()}})
+
+    // Push remaining
+    document.getElementById('gmPushBtn').addEventListener('click',()=>{if(!confirm('Push remaining unchecked goals to tomorrow?'))return; const todayK='goals:'+getTodayKey(); const tomK='goals:'+getTomorrowKey(); const today=loadList(todayK); const tom=loadList(tomK); const remaining=today.filter(g=>!g.done).map(g=>g.text); for(const t of remaining){ if(!tom.find(x=>x.text===t)) tom.push({text:t,done:false}) } const kept=today.filter(g=>g.done); saveList(todayK,kept); saveList(tomK,tom); renderToday(); renderTomorrow(); })
+
+    // Top3
+    function top3Key(){return 'top3:'+getTodayKey()}
+    function loadTop3(){return storeGet(top3Key())||[]}
+    function renderTop3(){const wrap=document.getElementById('top3Wrap'); wrap.innerHTML=''; const arr=loadTop3(); for(let i=0;i<3;i++){const obj=arr[i]; const div=document.createElement('div'); div.className='top3-item'; if(obj){const cb=document.createElement('div'); cb.style.display='inline-block'; cb.style.marginRight='8px'; cb.textContent=obj.done?'✓':''; cb.style.fontFamily='var(--mono)'; cb.style.cursor='pointer'; cb.addEventListener('click',()=>{obj.done=!obj.done; storeSet(top3Key(),arr); renderTop3();}); div.appendChild(cb); const txt=document.createElement('span'); txt.contentEditable=true; txt.textContent=obj.text; txt.addEventListener('blur',()=>{obj.text=txt.textContent.trim(); storeSet(top3Key(),arr); renderTop3();}); div.appendChild(txt);} else {div.textContent='—';} wrap.appendChild(div)} const doneAll=arr.length===3 && arr.every(x=>x && x.done); if(doneAll) wrap.style.background='radial-gradient(circle at top, rgba(107,227,164,0.08), transparent)'}
+    document.getElementById('top3AddBtn').addEventListener('click',()=>{const v=document.getElementById('top3Input').value.trim(); if(!v) return; const arr=loadTop3(); if(arr.length>=3) return alert('Top 3 full'); arr.push({text:v,done:false}); storeSet(top3Key(),arr); document.getElementById('top3Input').value=''; renderTop3();})
+
+    // Focus areas
+    const defaultFocus=['CCNA','AI Assistant','Fitness','Money'];
+    function focusKey(){return 'focus_v1'}
+    function loadFocus(){return storeGet(focusKey())||defaultFocus.slice()}
+    function renderFocus(){const wrap=document.getElementById('focusWrap'); wrap.innerHTML=''; const arr=loadFocus(); arr.slice(0,5).forEach((f,i)=>{const div=document.createElement('div'); div.className='focus-item'; div.textContent=f; div.addEventListener('click',()=>{const t=prompt('Edit focus',f); if(t!==null){arr[i]=t.trim(); storeSet(focusKey(),arr); renderFocus()}}); const del=document.createElement('button'); del.textContent='×'; del.style.marginLeft='8px'; del.addEventListener('click',(e)=>{e.stopPropagation(); arr.splice(i,1); storeSet(focusKey(),arr); renderFocus()}); div.appendChild(del); wrap.appendChild(div)}); document.getElementById('focusWrap').appendChild(document.createElement('div'))}
+    document.getElementById('focusAddBtn').addEventListener('click',()=>{const v=document.getElementById('focusInput').value.trim(); if(!v) return; const arr=loadFocus(); if(arr.length>=5) return alert('Max 5 focuses'); arr.push(v); storeSet(focusKey(),arr); document.getElementById('focusInput').value=''; renderFocus();})
+
+    // Deep work
+    function dwKey(){return 'deepwork:'+getTodayKey()}
+    function loadDW(){return storeGet(dwKey())||{sessions:0,minutes:0}}
+    function renderDW(){const d=loadDW(); document.getElementById('dwSessions').textContent=d.sessions; document.getElementById('dwMinutes').textContent=d.minutes}
+    async function startTimer(mins){if(Notification.permission!=='granted'){try{await Notification.requestPermission()}catch(e){}} const ms=mins*60*1000; const start=Date.now(); setTimeout(()=>{const d=loadDW(); d.sessions++; d.minutes+=mins; storeSet(dwKey(),d); renderDW(); try{if(Notification.permission==='granted') new Notification('Deep work session complete', {body:`${mins} minutes finished`})}catch(e){} },ms)}
+    document.getElementById('dw25').addEventListener('click',()=>startTimer(25)); document.getElementById('dw50').addEventListener('click',()=>startTimer(50)); document.getElementById('dw90').addEventListener('click',()=>startTimer(90));
+
+    // Financial
+    function finKey(){return 'financial_goals_v1'}
+    function loadFin(){return storeGet(finKey())||{savings:2000,savings_progress:0,cc_goal:600,cc_progress:0}}
+    function renderFin(){const f=loadFin(); document.getElementById('savBar').style.width=Math.min(100,Math.round(f.savings_progress/f.savings*100))+'%'; document.getElementById('ccBar').style.width=Math.min(100,Math.round(f.cc_progress/f.cc_goal*100))+'%'; document.getElementById('savInput').value=f.savings_progress; document.getElementById('ccInput').value=f.cc_progress}
+    document.getElementById('saveFinancial').addEventListener('click',()=>{const f=loadFin(); f.savings_progress=Number(document.getElementById('savInput').value||0); f.cc_progress=Number(document.getElementById('ccInput').value||0); storeSet(finKey(),f); renderFin()})
+
+    // Init
+    function init(){rollover(); computeStreak(); buildTicker(); startTicker(); updateDayRing(); renderToday(); renderTomorrow(); renderTop3(); renderFocus(); renderDW(); renderFin(); setInterval(updateDayRing,60000)}
+    init();
+  </script>
+</body>
+</html>
